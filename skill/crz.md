@@ -1,0 +1,278 @@
+# Astro Crumple Zone Implementation
+
+Build healthy Astro applications with Crumple Zone Architecture. Trust the browser, design for failure modes, minimize framework dependency.
+
+Prerequisite: Astro 5+ with `output: 'server'`. This architecture requires server-side rendering for middleware, API routes, and data fetching in frontmatter.
+
+## Priorities
+
+When concerns conflict, choose in this order:
+
+1. Correctness > Experience
+   * Data integrity and security are not traded for smoother interactions
+2. Recoverability > Continuity
+   * Ability to reconstruct state from canonical sources over never losing state
+3. Visibility > Abstraction
+   * Layer boundaries visible in code structure over boundaries hidden by framework
+4. Simplicity > Richness
+   * Fewer layers and less code over more features and interactivity
+
+## Reliability Layers
+
+1. HTML / Browser APIs
+   * Never breaks. Use as foundation. Semantic correctness (`<button>`, not `<div onclick>`) is the precondition
+2. CSS
+   * Breaks visually only. No functional impact
+3. Stateless island (props only)
+   * Safe if inputs are correct. Guarantee inputs server-side
+4. Stateful island (local state)
+   * Highest risk. Minimize this layer
+
+Rule: always ask "what happens if this breaks?" and implement in the lowest-numbered layer that accomplishes the task.
+
+Islands in layers 3-4 should be wrapped in each framework's error boundary mechanism. If the island crashes, display a fallback UI instead of a blank space. This structurally enforces the isolation guarantee — the rest of the page remains intact.
+
+Server-side errors: provide `pages/500.astro` for unhandled exceptions. In `---` frontmatter, catch expected errors (DB failures, external API errors) and render an error state in HTML. Action handlers throw `ActionError` with appropriate codes — the calling island or form receives the error and displays feedback.
+
+## Component Decisions
+
+Use Astro (.astro) by default:
+
+* Data display (tables, cards, lists)
+* Navigation, layout, conditional rendering
+
+Use islands only when local state is required:
+
+* Forms with validation or dynamic fields
+* Dialogs with open/close state
+* Real-time calculations (price, filtering)
+* Browser-native APIs (Geolocation, Web Speech)
+
+Submit-only forms use `<form>` + `FormData` — no island needed.
+
+Client directives:
+
+* `client:idle` — default for most islands
+* `client:load` — elements the user interacts with before scrolling (search box, primary navigation toggle)
+* `client:visible` — for below-the-fold content
+
+Decision test:
+
+1. Does it need DOM manipulation without state (dialog.showModal(), scroll-to-top, clipboard copy)?
+   * Yes → `<script>` tag. Layer 1 (Browser API). No island needed
+2. Does it declare local state? (useState / ref() / $state)
+   * No → Astro component
+   * Yes → Island. Group values that change together (e.g., form fields) into a single state object. Keep independently changing values as separate declarations. If the island's state serves more than one user interaction, split each interaction into its own island
+
+For the fuller decision model including navigation-first evaluation, see architecture.md section 5.1.
+
+## Pages and Data
+
+Execution boundary: the `---` block runs on the server. The HTML below it is the output. No JavaScript reaches the browser unless explicitly added via `<script>` or an island. Do not define client-side functions in frontmatter.
+
+* Fetch dynamic data (DB, API — changes per request) in `.astro` frontmatter. Never fetch in islands
+* Static configuration may be imported directly in islands — no need to serialize through props. A module is static configuration if it requires no server-side execution (no I/O, no async, no secrets). Examples: `as const` objects, Zod schemas, enum definitions, display constants
+* Pass only rendering data as props. Never pass auth tokens, API keys, or session data
+* Use `Astro.locals` (set by middleware) for auth/role data
+
+```astro
+---
+const role = Astro.locals.role;
+if (!role) return Astro.redirect("/login");
+const items = await getItems();
+---
+<Layout>
+  <ItemTable items={items} />
+  <EditForm client:idle initialData={items[0]} />
+</Layout>
+```
+
+## State Placement
+
+Canonical sources (same value on every read):
+
+| State              | Where                          | Why                                                 |
+| ------------------ | ------------------------------ | --------------------------------------------------- |
+| Auth / session     | HttpOnly Cookie                | Server-readable, hidden from JS                     |
+| Current page       | URL path                       | Browser-managed                                     |
+| Filters/pagination | URL query params               | Bookmarkable, shareable                             |
+| In-progress data   | sessionStorage                 | Per-tab, survives navigation                        |
+| User preferences   | HttpOnly Cookie / localStorage | Cookie if server reads; localStorage if client-only |
+
+Transient state (lost on reload):
+
+* Form input where the UI updates before submission (validation errors, dynamic fields, live preview) → component local state (controlled component)
+
+A controlled component moves value from HTML to framework — higher to lower reliability. If the UI does not update before submission, use `<form>` + `FormData`.
+
+Never use:
+
+* Global state libraries (Redux, Zustand, Jotai, Pinia, Vuex, Svelte stores)
+* Cross-island state sharing (Context, provide/inject)
+* localStorage for auth/session
+
+## Mutation Pattern
+
+Server handles correctness, client provides feedback as a crumple zone.
+
+All client-initiated mutations must use Astro Actions (`astro:actions`). Actions provide type-safe server functions with built-in Zod validation — the caller gets compile-time type errors if the contract is violated. Navigation without data change uses `<a>` or `navigate()` — not an Action.
+
+```typescript
+// src/actions/index.ts
+import { defineAction, ActionError } from "astro:actions";
+import { z } from "astro:schema";
+
+export const server = {
+  createItem: defineAction({
+    accept: "form",
+    input: z.object({ name: z.string().min(1) }),
+    handler: async (input, context) => {
+      const user = context.locals.user;
+      if (!user) throw new ActionError({ code: "UNAUTHORIZED" });
+      return await saveItem(input, user);
+    },
+  }),
+};
+```
+
+Choose the lowest layer that meets the requirement:
+
+1. `<form method="POST">` processed in `---` — pure HTML. No Action, no JS. Use for server-side processing without data mutation (analysis, search, conversion). The page's frontmatter handles the POST and returns HTML
+2. `<form action={actions.createItem}>` — HTML + Action. Still zero JS. Use when the POST mutates server-side data (create, update, delete) and needs type-safe validation
+3. Island calls `actions.createItem()` — JS required. Use only when the UI must update before, during, or after submission (validation, progress, error display)
+
+Action definition:
+
+* `accept: "form"` — for `<form>` submissions (layers 1-2 above). Prefer this
+* `accept: "json"` — for programmatic calls from islands (layer 3). Use when the island constructs the payload without a form element
+
+Client feedback (crumple zone):
+
+1. Submission starts → disable button, show progress
+2. Success → reconstruct from canonical sources:
+   * `navigate(url)` (ClientRouter) — soft reload with ViewTransition, preferred when ClientRouter is active
+   * `window.location.reload()` — hard reload, always works
+3. Failure → re-enable button, show error
+
+If feedback breaks, the action still completes or fails correctly on the server.
+
+`pages/api/` is only for external consumers (webhook receivers, streaming endpoints, non-JSON protocols) — not for mutations initiated by the client. Cookie operations, authentication, and all standard mutations use Actions.
+
+## Security Boundary
+
+The Astro server is a BFF — trust boundary between browser and backend.
+
+Required for all applications:
+
+* HTTPS in production
+* All cookies: `HttpOnly` + `SameSite=Lax` + `Secure`
+* External API calls only in `.astro` frontmatter or API routes
+* Validate all API route inputs with Zod
+
+When authentication is required:
+
+* Middleware checks auth on every request
+
+Forbidden:
+
+* Islands fetching external APIs directly
+* Secrets in `PUBLIC_` env vars
+* Auth tokens or API keys as island props
+* Auth data via `document.cookie`
+
+Browser-native APIs (Geolocation, Chrome AI, Web Speech) belong to the HTML/Browser API layer. Browser choice is the user's responsibility.
+
+Middleware:
+
+```typescript
+import { defineMiddleware } from "astro:middleware";
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  const session = context.cookies.get("session")?.value;
+  context.locals.user = session ? await resolveUser(session) : null;
+
+  // API routes check context.locals.user and return HTTP status directly.
+  // No redirect — they validate their own input (Zod).
+  if (context.url.pathname.startsWith("/api/")) return next();
+
+  if (!session && !isPublicPath(context.url.pathname)) {
+    return context.redirect("/login");
+  }
+
+  return next();
+});
+```
+
+## ViewTransition
+
+Crumple zone — if it breaks, the page still loads.
+
+```astro
+---
+import { ClientRouter } from "astro:transitions";
+---
+<head>
+  <ClientRouter />
+</head>
+<body>
+  <Header transition:animate="none" />
+  <Sidebar transition:animate="none" />
+  <main transition:animate="fade">
+    <slot />
+  </main>
+</body>
+```
+
+* Elements that appear on every page (header, sidebar, navigation): `transition:animate="none"`
+* Content area: `transition:animate="fade"` only
+* Use `astro:page-load` instead of `DOMContentLoaded`
+* Avoid `slide` / `morph` — bitmap text stretching
+* Avoid multiple `transition:name` — unintended morph on collision
+* Disable when the layout component changes (e.g., login → dashboard) or for non-HTML responses
+
+## Project Structure
+
+```
+src/
+  middleware.ts
+  pages/
+    api/                    — non-Action endpoints (webhooks, streaming, non-JSON)
+  features/
+    {feature}/
+      types.ts
+      data/                 — data access, server-only (backend boundary: swap internals without changing callers). Only frontmatter and Action handlers call into data/. Islands must not import from this directory
+      components/           — .astro (display) + islands (interaction)
+  shared/
+    layout/                 — AdminLayout, UserLayout
+    components/             — project-specific shared components (Pagination, Badge). Built from ui/ primitives
+    lib/                    — generic utilities only (date formatting, string helpers). Domain-specific logic belongs in features/
+    types/                  — shared type definitions
+  components/ui/            — third-party UI primitives (shadcn/ui, etc.). If not using a UI library, this directory is unnecessary — put primitives in shared/components/
+```
+
+## Test Strategy
+
+Test effort follows the reliability layers:
+
+1. Layer 1-2 (HTML/CSS, SSR output)
+   * E2E tests (Playwright). Verify that server-rendered pages return correct content and structure
+2. Server (Actions / data access)
+   * Unit tests. Guarantee server-side correctness — validation, authorization, data mutations
+3. Islands (layers 3-4)
+   * Storybook for human visual/interaction review. Whether feedback is appropriate is a human judgment
+   * Automated tests (Playwright, component tests) raise confidence but do not determine correctness — they verify mechanics (button disables, error shows), not UX quality
+
+The server is the source of correctness. Test the server thoroughly; verify islands with human eyes.
+
+## Post-Application Review
+
+After applying CRZ principles, review every change against these checks before finalizing:
+
+1. **Simplicity check**
+   * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (SSR props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
+2. **Blast radius check**
+   * For each new layer or pattern introduced, answer: "What happens if this breaks?" If the answer is "nothing, because the layer below already handles it," the layer is redundant.
+3. **Dead code check**
+   * Are all exported functions called? Unused initializers, sync functions, or cache hydration calls indicate an over-designed layer.
+4. **Canonical source honesty**
+   * Is the declared canonical source genuinely authoritative, or is it a derived cache being treated as one? A sessionStorage copy of server data is a cache, not a canonical source. Name the actual authority and acknowledge stopgaps as stopgaps.
