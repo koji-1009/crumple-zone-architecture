@@ -2,7 +2,7 @@
 
 Build healthy Astro applications with Crumple Zone Architecture. Trust the browser, design for failure modes, minimize framework dependency.
 
-Prerequisite: Astro 5+ with `output: 'server'`. This architecture requires server-side rendering for middleware, API routes, and data fetching in frontmatter.
+Prerequisite: Astro 6+ with `output: 'server'`. This architecture requires server-side rendering for middleware, API routes, and data fetching in frontmatter.
 
 ## Priorities
 
@@ -137,9 +137,28 @@ export const server = {
 
 Choose the lowest layer that meets the requirement:
 
-1. `<form method="POST">` processed in `---` — pure HTML. No Action, no JS. Use for server-side processing without data mutation (analysis, search, conversion). The page's frontmatter handles the POST and returns HTML
+1. `<form method="POST">` with PRG — pure HTML. No Action, no JS. Use for server-side processing without data mutation (analysis, search, conversion). POST stores results in `Astro.session` and redirects to the same URL. GET reads from session and renders. This avoids the browser's "resubmit form?" warning on reload
 2. `<form action={actions.createItem}>` — HTML + Action. Still zero JS. Use when the POST mutates server-side data (create, update, delete) and needs type-safe validation
 3. Island calls `actions.createItem()` — JS required. Use only when the UI must update before, during, or after submission (validation, progress, error display)
+
+PRG pattern (layer 1):
+
+```astro
+---
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const result = await analyze(formData);
+  await Astro.session.set("result", result);
+  return Astro.redirect(Astro.url.pathname);
+}
+const result = await Astro.session.get("result");
+---
+<form method="POST">
+  <input name="query" />
+  <button>Analyze</button>
+</form>
+{result && <ResultView data={result} />}
+```
 
 Action definition:
 
