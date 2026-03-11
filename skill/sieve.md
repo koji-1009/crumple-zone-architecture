@@ -164,9 +164,8 @@ export function EditForm({ initialData }: Props) {
 
 Rules:
 
-* Every visual value references a CSS Custom Property from tokens
+* Every visual value references a CSS Custom Property from tokens. If the token is not yet defined, use the direct value — do not invent token names
 * One `.module.css` file per component, co-located — works in both `.astro` and island files
-* No hard-coded colors, spacing, or font sizes in module files
 * State-dependent styles (hover, focus, disabled) use CSS pseudo-classes, not JS
 
 ## Tailwind Pattern
@@ -295,7 +294,7 @@ Rules:
 * Components reference tokens. They do not know whether dark mode is active
 * Prefer `prefers-color-scheme` — browser-native, zero JS
 * Manual toggle uses a cookie (server-readable) — not JS-managed component state
-* Never toggle dark mode by setting CSS Custom Property values in JS
+* Never toggle dark mode by setting CSS Custom Property values in JS. Exception: transient preview before server-side persistence (e.g., showing the user what dark mode looks like before saving the cookie) is acceptable
 
 ## Responsive Design
 

@@ -44,7 +44,7 @@ Use Astro (.astro) by default:
 Use islands only when local state is required:
 
 * Forms with validation or dynamic fields
-* Dialogs with open/close state
+* Dialogs with internal state (validation, dynamic fields, multi-step)
 * Real-time calculations (price, filtering)
 * Browser-native APIs (Geolocation, Web Speech)
 
@@ -115,7 +115,7 @@ Never use:
 
 Server handles correctness, client provides feedback as a crumple zone.
 
-All client-initiated mutations must use Astro Actions (`astro:actions`). Actions provide type-safe server functions with built-in Zod validation — the caller gets compile-time type errors if the contract is violated. Navigation without data change uses `<a>` or `navigate()` — not an Action.
+Client-initiated mutations that accept user input requiring validation must use Astro Actions (`astro:actions`). Actions provide type-safe server functions with built-in Zod validation — the caller gets compile-time type errors if the contract is violated. Mutations without user input (logout, session clear) use `<form method="POST">` with PRG — no Action needed. Navigation without data change uses `<a>` or `navigate()` — not an Action.
 
 ```typescript
 // src/actions/index.ts
@@ -137,9 +137,9 @@ export const server = {
 
 Choose the lowest layer that meets the requirement:
 
-1. `<form method="POST">` with PRG — pure HTML. No Action, no JS. Use for server-side processing without data mutation (analysis, search, conversion). POST stores results in `Astro.session` and redirects to the same URL. GET reads from session and renders. This avoids the browser's "resubmit form?" warning on reload
-2. `<form action={actions.createItem}>` — HTML + Action. Still zero JS. Use when the POST mutates server-side data (create, update, delete) and needs type-safe validation
-3. Island calls `actions.createItem()` — JS required. Use only when the UI must update before, during, or after submission (validation, progress, error display)
+1. `<form method="POST">` with PRG — pure HTML. No Action, no JS. Use when POST processing does not require Zod input validation (no user input, or trivial input). POST processes the request, stores results in `Astro.session` if needed, and redirects. This avoids the browser's "resubmit form?" warning on reload. Examples: search, analysis, conversion, logout
+2. `<form action={actions.createItem}>` — HTML + Action. Still zero JS. Use when POST accepts user input that requires type-safe Zod validation and structured error handling
+3. Island calls `actions.createItem()` — JS required. Use only when the mutation requires JS to modify the DOM (disable button, show spinner, display error, update list without reload)
 
 PRG pattern (layer 1):
 
@@ -162,7 +162,7 @@ const result = await Astro.session.get("result");
 
 Action definition:
 
-* `accept: "form"` — for `<form>` submissions (layers 1-2 above). Prefer this
+* `accept: "form"` — for `<form>` submissions (layer 2). Prefer this
 * `accept: "json"` — for programmatic calls from islands (layer 3). Use when the island constructs the payload without a form element
 
 Client feedback (crumple zone):
@@ -175,7 +175,7 @@ Client feedback (crumple zone):
 
 If feedback breaks, the action still completes or fails correctly on the server.
 
-`pages/api/` is only for external consumers (webhook receivers, streaming endpoints, non-JSON protocols) — not for mutations initiated by the client. Cookie operations, authentication, and all standard mutations use Actions.
+`pages/api/` is only for external consumers (webhook receivers, streaming endpoints, non-JSON protocols) — not for mutations initiated by the client. Mutations with validated user input use Actions; mutations without user input (logout, session clear) use PRG.
 
 ## Security Boundary
 
@@ -245,8 +245,7 @@ import { ClientRouter } from "astro:transitions";
 * Elements that appear on every page (header, sidebar, navigation): `transition:animate="none"`
 * Content area: `transition:animate="fade"` only
 * Use `astro:page-load` instead of `DOMContentLoaded`
-* Avoid `slide` / `morph` — bitmap text stretching
-* Avoid multiple `transition:name` — unintended morph on collision
+* Prohibited: `transition:animate="slide"`, `transition:animate="morph"`, multiple `transition:name` on the same page
 * Never call `history.pushState()` or `history.replaceState()` in islands — ClientRouter stores navigation data in `history.state`. Overwriting it breaks browser back/forward. To update URL query params (filters, pagination), use `navigate()` from `astro:transitions/client` or `<a>` with the new query string
 * Disable when the layout component changes (e.g., login → dashboard) — use `window.location.href` for hard navigation instead of `navigate()`
 * Disable for non-HTML responses
