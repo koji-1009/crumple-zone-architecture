@@ -20,6 +20,12 @@ Implementation and review should be separate agents. A single agent writing and 
 * Review agent reads architecture.md and extensions.md, then evaluates the diff
 * Human operator reviews the final diff as the last gate
 
+## Treating CRZ as a Compiler
+
+CRZ is not a set of suggestions — it is a specification checker. Like a compiler, it does not ask "does this work?" but "does this conform to the specification?" Ignoring a CRZ rule because the code "works right now" is the same structural mistake as ignoring a compiler warning because the tests pass.
+
+Implementation agents exhibit a consistent bias: "I know this, therefore it is already handled." Knowledge and execution are not the same. The Post-Application Review exists to close this gap — execute every check mechanically, in order. Skipping a check because a previous check seemed to cover it allows bias to propagate.
+
 ## Skill Prompt Authoring
 
 To translate CRZ into a framework-specific skill prompt:
