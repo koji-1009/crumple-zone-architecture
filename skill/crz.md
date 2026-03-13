@@ -64,6 +64,18 @@ Decision test:
    * No → Astro component
    * Yes → Island. Group values that change together (e.g., form fields) into a single state object. Keep independently changing values as separate declarations. If the island's state serves more than one user interaction, split each interaction into its own island
 
+Island verification — before writing an island, confirm each hook is necessary:
+
+* useState holding server data → pass as props from frontmatter. No island needed
+* useState for tooltip/hover display → HTML `title` attribute or CSS `:hover`. No island needed
+* useState for scroll/carousel position → CSS `overflow-x: auto`. No island needed
+* useState for filter/sort selection → URL query params + server-side filtering. No island needed
+* useEffect fetching data → move to frontmatter. Never fetch in islands
+* useEffect syncing URL → URL is canonical. Use `<a>` or `navigate()`
+* useEffect for DOM manipulation without state → use `<script>` tag
+
+If all state values are replaceable, the island is unnecessary — rewrite as `.astro` component or `<script>`.
+
 For the fuller decision model including navigation-first evaluation, see architecture.md section 5.1.
 
 ## Pages and Data
@@ -296,3 +308,5 @@ After applying CRZ principles, review every change against these checks before f
    * Are all exported functions called? Unused initializers, sync functions, or cache hydration calls indicate an over-designed layer.
 4. **Simplicity check**
    * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (SSR props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
+5. **Island necessity check**
+   * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, or `<script>` DOM call? If yes for all values, the island should be an `.astro` component.
