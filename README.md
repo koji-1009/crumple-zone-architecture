@@ -22,6 +22,8 @@ Japanese: [ja/](ja/)
 
 [**skill/crz.md**](skill/crz.md) — Astro implementation skill. Self-contained. Pass to an AI agent during development.
 
+[**skill/sieve.md**](skill/sieve.md) — CSS implementation skill. Companion to crz.md. Pass alongside crz.md when the task involves styling.
+
 [**architecture.md**](architecture.md) — Design principles behind the skill's rules. Add as context when reviewing AI-generated code or resolving edge cases.
 
 [**extensions.md**](extensions.md) — Patterns beyond MPA + Islands: real-time updates, cache layers, optimistic updates, and their security considerations.
@@ -56,7 +58,29 @@ mkdir -p .cursor/rules && curl -o .cursor/rules/crz.md https://raw.githubusercon
 curl -o AGENTS.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
-For Claude Code, use `/crz` before or during development.
+### Sieve (CSS companion)
+
+Add alongside crz.md when the task involves styling:
+
+#### Claude Code (project)
+
+```bash
+curl -o .claude/commands/sieve.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve.md
+```
+
+#### Claude Code (global)
+
+```bash
+curl -o ~/.claude/commands/sieve.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve.md
+```
+
+#### Cursor
+
+```bash
+curl -o .cursor/rules/sieve.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve.md
+```
+
+For Claude Code, use `/crz` before or during development. Use `/sieve` alongside `/crz` for styling tasks.
 
 ## License
 
