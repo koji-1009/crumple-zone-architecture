@@ -22,7 +22,7 @@ When concerns conflict, choose in this order:
 1. HTML / Browser APIs
    * Never breaks. Use as foundation. Semantic correctness (`<button>`, not `<div onclick>`) is the precondition
 2. CSS
-   * Breaks visually only. No functional impact. Interactions achievable with `:hover`, `:focus`, `::after`, or `<details>`/`<summary>` belong here — not in an island
+   * Breaks visually only. No functional impact. Interactions achievable with `:hover`, `:focus`, `::after`, `:target`, or `<details>`/`<summary>` belong here — not in an island
 3. Stateless island (props only)
    * Safe if inputs are correct. Guarantee inputs server-side
 4. Stateful island (local state)
@@ -297,6 +297,20 @@ Test effort follows the reliability layers:
 3. Islands (layers 3-4)
    * Storybook for human visual/interaction review. Whether feedback is appropriate is a human judgment
    * Automated tests (Playwright, component tests) raise confidence but do not determine correctness — they verify mechanics (button disables, error shows), not UX quality
+
+Test directory mirrors source structure:
+
+```
+tests/
+  fixtures/                     — real API response samples
+  features/
+    {feature}/
+      data/
+        {module}.test.ts
+  shared/
+```
+
+Test shared infrastructure (fetch wrappers, caching, rate limiting) in shared test files. Consumer tests should not re-test shared behavior — they test their own logic assuming the shared layer works.
 
 The server is the source of correctness. Test the server thoroughly; verify islands with human eyes.
 
