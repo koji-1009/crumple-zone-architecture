@@ -22,7 +22,7 @@ When concerns conflict, choose in this order:
 1. HTML / Browser APIs
    * Never breaks. Use as foundation. Semantic correctness (`<button>`, not `<div onclick>`) is the precondition
 2. CSS
-   * Breaks visually only. No functional impact
+   * Breaks visually only. No functional impact. Interactions achievable with `:hover`, `:focus`, `::after`, or `<details>`/`<summary>` belong here — not in an island
 3. Stateless island (props only)
    * Safe if inputs are correct. Guarantee inputs server-side
 4. Stateful island (local state)
@@ -33,6 +33,8 @@ Rule: always ask "what happens if this breaks?" and implement in the lowest-numb
 Islands in layers 3-4 should be wrapped in each framework's error boundary mechanism. If the island crashes, display a fallback UI instead of a blank space. This structurally enforces the isolation guarantee — the rest of the page remains intact.
 
 Server-side errors: provide `pages/500.astro` for unhandled exceptions. In `---` frontmatter, catch expected errors (DB failures, external API errors) and render an error state in HTML. Action handlers throw `ActionError` with appropriate codes — the calling island or form receives the error and displays feedback.
+
+Partial failure: when frontmatter fetches from multiple sources, catch each independently. Display successful results and show a warning banner for failed sources. Do not fail the entire page because one source is unavailable — this applies "Recoverability > Continuity" at the data level.
 
 ## Component Decisions
 
@@ -107,9 +109,11 @@ Canonical sources (same value on every read):
 | ------------------ | ------------------------------ | --------------------------------------------------- |
 | Auth / session     | HttpOnly Cookie                | Server-readable, hidden from JS                     |
 | Current page       | URL path                       | Browser-managed                                     |
-| Filters/pagination | URL query params               | Bookmarkable, shareable                             |
+| View state (filters, pagination, sort, search, active tab) | URL query params | Shareable, bookmarkable, reproducible — with or without authentication |
 | In-progress data   | sessionStorage                 | Per-tab, survives navigation                        |
-| User preferences   | HttpOnly Cookie / localStorage | Cookie if server reads; localStorage if client-only |
+| User preferences   | Server-side DB / HttpOnly Cookie / localStorage | DB if backend exists; cookie if BFF-only and server reads; localStorage if client-only |
+
+URL vs cookie is not about authentication — it is about state type. View state (what you are looking at) always goes in the URL, even in authenticated apps. Identity state (who you are) goes in cookies. Preference state (how you want things) goes in DB or cookies. When URL params and cookie defaults overlap, URL params take precedence.
 
 Transient state (lost on reload):
 
