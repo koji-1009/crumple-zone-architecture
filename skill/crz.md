@@ -105,13 +105,13 @@ const items = await getItems();
 
 Canonical sources (same value on every read):
 
-| State              | Where                          | Why                                                 |
-| ------------------ | ------------------------------ | --------------------------------------------------- |
-| Auth / session     | HttpOnly Cookie                | Server-readable, hidden from JS                     |
-| Current page       | URL path                       | Browser-managed                                     |
-| View state (filters, pagination, sort, search, active tab) | URL query params | Shareable, bookmarkable, reproducible — with or without authentication |
-| In-progress data   | sessionStorage                 | Per-tab, survives navigation                        |
-| User preferences   | Server-side DB / HttpOnly Cookie / localStorage | DB if backend exists; cookie if BFF-only and server reads; localStorage if client-only |
+| State                                                      | Where                                           | Why                                                                                    |
+| ---------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Auth / session                                             | HttpOnly Cookie                                 | Server-readable, hidden from JS                                                        |
+| Current page                                               | URL path                                        | Browser-managed                                                                        |
+| View state (filters, pagination, sort, search, active tab) | URL query params                                | Shareable, bookmarkable, reproducible — with or without authentication                 |
+| In-progress data                                           | sessionStorage                                  | Per-tab, survives navigation                                                           |
+| User preferences                                           | Server-side DB / HttpOnly Cookie / localStorage | DB if backend exists; cookie if BFF-only and server reads; localStorage if client-only |
 
 URL vs cookie is not about authentication — it is about state type. View state (what you are looking at) always goes in the URL, even in authenticated apps. Identity state (who you are) goes in cookies. Preference state (how you want things) goes in DB or cookies. When URL params and cookie defaults overlap, URL params take precedence.
 
@@ -328,3 +328,5 @@ After applying CRZ principles, review every change against these checks before f
    * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (SSR props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
 5. **Island necessity check**
    * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, or `<script>` DOM call? If yes for all values, the island should be an `.astro` component.
+6. **Document consistency check**
+   * Does the change add, remove, or rename a feature, route, or component? If yes, verify that CLAUDE.md, PROJECT.md, and any other project documentation reflect the current state. Deleted features must be removed from documentation.
