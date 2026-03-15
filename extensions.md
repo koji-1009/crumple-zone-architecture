@@ -203,12 +203,12 @@ Example: Firestore uses IndexedDB as a local cache, with the SDK managing synchr
 
 sessionStorage and sync layer caches, unlike HttpOnly cookies, are readable and writable by XSS. Combined with the security boundary from the design principles:
 
-| Canonical source | XSS resistance                   | What to store                    |
-| ---------------- | -------------------------------- | -------------------------------- |
-| HttpOnly Cookie  | Unreadable by JS                 | Auth credentials, sessions       |
-| URL query params | Readable (assumed non-sensitive) | Filters, pagination              |
-| sessionStorage   | Readable/writable                | In-progress data (non-sensitive) |
-| localStorage     | Readable/writable                | User preferences (non-sensitive) |
-| Sync layer cache | Readable/writable                | Display data (non-sensitive)     |
+| Canonical source | XSS resistance                   | What to store                                  |
+| ---------------- | -------------------------------- | ---------------------------------------------- |
+| HttpOnly Cookie  | Unreadable by JS                 | Auth credentials, sessions                     |
+| URL query params | Readable (assumed non-sensitive) | View state (filters, pagination, sort, search) |
+| sessionStorage   | Readable/writable                | In-progress data (non-sensitive)               |
+| localStorage     | Readable/writable                | User preferences (non-sensitive)               |
+| Sync layer cache | Readable/writable                | Display data (non-sensitive)                   |
 
 Auth credentials always go in HttpOnly cookies. This does not change with extension patterns.
