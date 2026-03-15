@@ -61,6 +61,8 @@ Canonical sources (idempotent reads):
 * localStorage
   * Browser-managed. Shared across all tabs, persistent. For user preferences (theme, etc.)
   * The `storage` event provides automatic cross-tab synchronization
+* Server-side DB
+  * Authoritative store for user preferences and settings when a backend exists. Cookie or localStorage are alternatives when no backend DB is available
 * Server data
   * Derived by the server using the above as keys
 
@@ -156,15 +158,23 @@ Does user interaction change the display?
 
 ### 5.2 Where to Place State
 
+Decide by state type, not by authentication status:
+
 ```
-Can it live in a canonical source? (idempotent reads)
-├─ Server needs to read it       → Cookie (HttpOnly)
-├─ Should be shareable/bookmarkable → URL query params
-├─ Per-tab persistence is enough  → sessionStorage
-├─ Cross-tab, persistent, client-only → localStorage
+What type of state is it?
+├─ View state (filters, pagination, sort, search, active tab)
+│                                 → URL query params (always, even in authenticated apps)
+├─ Identity state (auth, session) → Cookie (HttpOnly)
+├─ Preference state (theme, defaults, settings)
+│   ├─ Backend DB exists          → Server-side DB
+│   ├─ Server needs to read it    → Cookie (HttpOnly)
+│   └─ Client-only                → localStorage
+├─ Per-tab in-progress data       → sessionStorage
 └─ None of the above (temporary until submission)
                                   → Component local state (transient)
 ```
+
+When URL params and cookie defaults overlap (e.g., a search target preference in a cookie, but `?target=x` in the URL), URL params take precedence.
 
 ## 6. Premises
 
