@@ -58,6 +58,23 @@ Client directives:
 * `client:load` — elements the user interacts with before scrolling (search box, primary navigation toggle)
 * `client:visible` — for below-the-fold content
 
+Server Islands (`server:defer`):
+
+Defer server rendering of non-essential components. The page loads with fallback content; the component renders asynchronously via a separate server request.
+
+When to use frontmatter (default):
+
+* Page's main content — block SSR to guarantee delivery
+* Auxiliary content needed immediately — use partial failure pattern on error
+* Content whose absence would mislead the user
+
+When to use `server:defer`:
+
+* Expensive computation where the user expects loading time (analytics charts, aggregated reports)
+* Personalized content on an otherwise cacheable page (user profile widget on a public page)
+
+Fallback design: if the Server Island fails, the fallback remains silently — no error UI, no retry. Design the fallback as content meaningful on its own, not just a loading indicator.
+
 Decision test:
 
 1. Does it need DOM manipulation without state (dialog.showModal(), scroll-to-top, clipboard copy)?

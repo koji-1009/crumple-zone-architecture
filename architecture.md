@@ -176,6 +176,23 @@ What type of state is it?
 
 When URL params and cookie defaults overlap (e.g., a search target preference in a cookie, but `?target=x` in the URL), URL params take precedence.
 
+### 5.3 Server Rendering: Synchronous vs Deferred
+
+Server-rendered components can be delivered synchronously (blocking page load) or deferred (loaded asynchronously with fallback content).
+
+Synchronous (default):
+
+* Page's main content — guarantee delivery before the page reaches the user
+* Content whose absence would mislead the user
+* Use partial failure pattern when fetching from multiple sources
+
+Deferred:
+
+* Expensive computation where the user naturally expects loading time
+* Personalized content on an otherwise cacheable page
+
+Deferred rendering is a crumple zone: if it fails, the fallback remains and the page continues to function. Design fallback content to be meaningful on its own, not merely a loading indicator.
+
 ## 6. Premises
 
 1. Trust the browser and minimize framework dependency. The scope of MPA continues to expand as browsers gain native capabilities
