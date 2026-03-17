@@ -60,7 +60,7 @@ Client directives:
 
 Server Islands (`server:defer`):
 
-Defer server rendering of non-essential components. The page loads with fallback content; the component renders asynchronously via a separate server request.
+Defer server rendering of auxiliary components. The page loads with fallback content; the component renders asynchronously via a separate server request.
 
 When to use frontmatter (default):
 
@@ -170,7 +170,7 @@ export const server = {
 
 Choose the lowest layer that meets the requirement:
 
-1. `<form method="POST">` with PRG — pure HTML. No Action, no JS. Use when POST processing does not require Zod input validation (no user input, or trivial input). POST processes the request, stores results in `Astro.session` if needed, and redirects. This avoids the browser's "resubmit form?" warning on reload. Examples: search, analysis, conversion, logout
+1. `<form method="POST">` with PRG — pure HTML. No Action, no JS. Use when the form carries no user-authored content (logout, deletion by ID, re-processing a previous result). POST processes the request, stores results in `Astro.session` if needed, and redirects. This avoids the browser's "resubmit form?" warning on reload
 2. `<form action={actions.createItem}>` — HTML + Action. Still zero JS. Use when POST accepts user input that requires type-safe Zod validation and structured error handling
 3. Island calls `actions.createItem()` — JS required. Use only when the mutation requires JS to modify the DOM (disable button, show spinner, display error, update list without reload)
 
