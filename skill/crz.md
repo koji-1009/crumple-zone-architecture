@@ -208,7 +208,7 @@ Client feedback (crumple zone):
 
 If feedback breaks, the action still completes or fails correctly on the server.
 
-`pages/api/` is only for external consumers (webhook receivers, streaming endpoints, non-JSON protocols) — not for mutations initiated by the client. Mutations with validated user input use Actions; mutations without user input (logout, session clear) use PRG.
+`pages/api/` is only for external consumers (webhook receivers, SSE/streaming) — not for mutations initiated by the client. Client-initiated mutations — including file uploads — use Actions (`accept: "form"` handles FormData with files) with processing logic in `features/*/data/`. Mutations without user input (logout, session clear) use PRG.
 
 ## Security Boundary
 
@@ -289,11 +289,11 @@ import { ClientRouter } from "astro:transitions";
 src/
   middleware.ts
   pages/
-    api/                    — non-Action endpoints (webhooks, streaming, non-JSON)
+    api/                    — endpoints for external consumers only (webhook receivers, SSE/streaming)
   features/
     {feature}/
       types.ts
-      data/                 — data access, server-only (backend boundary: swap internals without changing callers). Only frontmatter and Action handlers call into data/. Islands must not import from this directory
+      data/                 — data I/O, server-only (backend boundary: swap internals without changing callers). API fetch, file processing, DB queries, storage writes. Only frontmatter and Action handlers call into data/. Islands must not import from this directory
       components/           — .astro (display) + islands (interaction)
   shared/
     layout/                 — AdminLayout, UserLayout
