@@ -267,18 +267,17 @@ import { ClientRouter } from "astro:transitions";
   <ClientRouter />
 </head>
 <body>
-  <Header transition:animate="none" />
-  <Sidebar transition:animate="none" />
-  <main transition:animate="fade">
+  <Header />
+  <Sidebar />
+  <main>
     <slot />
   </main>
 </body>
 ```
 
-* Elements that appear on every page (header, sidebar, navigation): `transition:animate="none"`
-* Content area: `transition:animate="fade"` only
+* Add `<ClientRouter />` to the layout. The default crossfade applies to the entire page — no further directives needed
+* `transition:animate` and `transition:name` are unnecessary for the default crossfade. Specifying them generates per-component `view-transition-name` CSS, requiring individual tuning for each targeted Astro component. Omitting them avoids this overhead
 * Use `astro:page-load` instead of `DOMContentLoaded`
-* Prohibited: `transition:animate="slide"`, `transition:animate="morph"`, multiple `transition:name` on the same page
 * Never call `history.pushState()` or `history.replaceState()` in islands — ClientRouter stores navigation data in `history.state`. Overwriting it breaks browser back/forward. To update URL query params (filters, pagination), use `navigate()` from `astro:transitions/client` or `<a>` with the new query string
 * Disable when the layout component changes (e.g., login → dashboard) — use `window.location.href` for hard navigation instead of `navigate()`
 * Disable for non-HTML responses

@@ -124,9 +124,8 @@ Page transitions and interaction feedback are designed as crumple zones. If they
 
 `ViewTransition` — apply to MPA page switches for SPA-equivalent transitions:
 
-* Persistent structures (header, sidebar) do not animate
-* Only the content area fades
-* Avoid size interpolation (slide, morph). Bitmap scaling causes text stretching
+* Add `ClientRouter` to the layout. The default crossfade applies to the entire page — no further directives needed
+* `transition:animate` and `transition:name` are unnecessary for the default crossfade. Specifying them generates per-component `view-transition-name` CSS, requiring individual tuning for each targeted Astro component. Omitting them avoids this overhead
 * In unsupported browsers, falls back to standard MPA navigation
 
 Interaction feedback — if it breaks, the operation still completes:
