@@ -192,9 +192,40 @@ Deferred:
 
 Deferred rendering is a crumple zone: if it fails, the fallback remains and the page continues to function. Design fallback content to be meaningful on its own, not merely a loading indicator.
 
+### 5.4 Evaluating Browser API Maturity
+
+"Trust the browser" is not unconditional. Before delegating to a browser API, evaluate it on four axes:
+
+| Axis | Trustworthy | Immature |
+| --- | --- | --- |
+| Cross-Platform Parity | Consistent behavior across desktop, mobile, and assistive technologies. Minor visual differences acceptable; behavioral differences are not | Behavioral divergence across browsers, or missing entirely on a major platform |
+| Composability | Works with standard CSS, HTML, and JS patterns without fighting the platform | Requires non-obvious workarounds to function. Cannot be styled. Ignores standard event models |
+| Failure Mode Transparency | Graceful degradation to a working experience. Feature detection is straightforward | Silent failure — appears to work but produces incorrect or inconsistent results |
+| Specification Stability | WHATWG Living Standard or W3C Recommendation. Baseline Widely Available | Behind flags, under active redesign, or removed from spec after initial shipping |
+
+An API must score Trustworthy on **all four axes** for direct delegation. Failure on any single axis triggers containment.
+
+Containment strategies (in order of preference):
+
+1. **Avoid** — Use an alternative interaction pattern that does not require the API
+2. **Isolate** — Wrap in a single component with a defined contract. The component handles its own fallback. The rest of the application never touches the API directly
+3. **Delegate to a library** — Use a purpose-built library, but wrap it behind a project-owned interface. No feature code imports the library directly
+
+Three failure patterns determine the appropriate response and revisit timeline:
+
+| Pattern | Cause | Example | Strategy | Revisit |
+| --- | --- | --- | --- | --- |
+| Structural design flaw | The spec itself is wrong | Drag and Drop API (mouse-only design) | Permanent Avoid | Only if a new spec replaces it |
+| Implementation lag | Spec is sound, engines haven't shipped | `appearance: base-select` | Temporary Isolate | When a second/third engine ships |
+| Underspecification | Spec deliberately leaves behavior undefined | `<datalist>` filtering algorithm | Avoid for non-trivial use | When spec defines the behavior |
+
+The third pattern is the most insidious: the API passes feature detection, appears to work, and behaves differently per browser — all within spec.
+
+For individual API assessments and the ClientRouter exit strategy, see `references/`.
+
 ## 6. Premises
 
-1. Trust the browser and minimize framework dependency. The scope of MPA continues to expand as browsers gain native capabilities
+1. Trust the browser — calibrated to maturity (5.4). Contain immature APIs behind crumple zones; fix defects upstream to thin the zone. The scope of MPA continues to expand as browsers gain native capabilities
 2. Design for failure modes. Begin with fault containment, not feature addition
 3. The server is the authority on state. The client is a display layer; a reload is the reconstruction mechanism from canonical sources
 4. Make security boundaries visible. Use explicit API routes, not implicit RPCs
