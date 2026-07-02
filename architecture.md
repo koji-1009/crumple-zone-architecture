@@ -223,6 +223,14 @@ The third pattern is the most insidious: the API passes feature detection, appea
 
 For individual API assessments and the ClientRouter exit strategy, see `references/`.
 
+### 5.5 Component Granularity and Behavior Locality
+
+The cost of component decomposition depends on who edits the code. For a human reader, fine-grained components add navigation and indirection cost — the classic argument against premature extraction. For an AI agent, a component is a write-unit: a small component is a small edit target that needs little context, and an edit mistake inside it cannot take down the page. Blast radius applies to the development process, not only to runtime.
+
+`.astro` components make decomposition free at runtime: they compile to HTML, carry no lifecycle, and expose props as their only interface. With near-zero decomposition cost and positive containment value, the default inverts — when in doubt, cut smaller. "A plausible independent edit target" joins reuse, independent data fetching, and independent failure modes as an extraction criterion.
+
+Behavior belongs with the markup it drives. When a page-level `<script>` accumulates unrelated behaviors, split each widget's markup and its script into one component — one component, one concern, one `<script>`. The goal is locality of source, not DOM sandboxing: Astro scripts are module-scoped, document-wide queries are acceptable, and wrapper elements or scoping attributes added only to narrow queries are noise. Two boundaries hold the pattern in place: behavior that reads across sections is the parent's concern and stays at the parent; behavior that needs local state is an island (5.1), not a grown script. A component's script runs once per page regardless of instance count — wire all instances via `querySelectorAll`, never assume one.
+
 ## 6. Premises
 
 1. Trust the browser — calibrated to maturity (5.4). Contain immature APIs behind crumple zones; fix defects upstream to thin the zone. The scope of MPA continues to expand as browsers gain native capabilities

@@ -71,8 +71,9 @@ Extract an Astro component when:
 * The same UI block appears on 2+ pages (reuse)
 * A section fetches data independently (enables partial failure pattern)
 * A section has independent failure modes (limits blast radius)
+* A section is a plausible independent edit target (write-unit: a small component is a small edit target, and an edit mistake in it cannot break the page)
 
-If none apply, inline HTML is sufficient.
+If none apply, inline HTML is sufficient. Decomposing into `.astro` components is free at runtime — they compile to HTML with props as the only interface — so when in doubt, cut smaller.
 
 Use Astro (.astro) by default:
 
@@ -131,7 +132,18 @@ Island verification — before writing an island, confirm each hook is necessary
 
 If all state values are replaceable, the island is unnecessary — rewrite as `.astro` component or `<script>`.
 
-For the fuller decision model including navigation-first evaluation, see architecture.md section 5.1.
+### Script Behavior
+
+`<script>` handles layer-1 behavior: DOM operations without local state. Keep each script next to the markup it drives:
+
+* One component, one concern, one `<script>`. A page script wiring two unrelated widgets is the signal to split — extract each widget's markup together with its script into a dedicated component
+* The same script behavior used on 2+ pages → one shared component owning both the markup and the script
+* Cross-cutting behavior that reads fields across sections is the parent's concern. Keep it at the parent — pushing it into a child forces the child to query ancestor DOM
+* The goal is locality of source, not DOM sandboxing. Astro `<script>` is module-scoped, and document-wide `querySelector` is acceptable. Do not add wrapper elements or `data-scope` attributes just to narrow queries
+* A component's `<script>` runs once per page even when the component renders N times. Wire with `querySelectorAll` or `data-*` lookups and per-element listeners — never assume a single instance
+* The moment a behavior needs local state, it becomes an island (see decision test) — split the markup, not the script
+
+For the fuller decision model including navigation-first evaluation, see architecture.md section 5.1; for the reasoning behind granularity and behavior locality, section 5.5.
 
 ## Pages and Data
 
