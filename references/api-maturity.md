@@ -15,7 +15,7 @@ Last reviewed: 2026-07
 | `<input type="month/week">` | Moderate-High | Immature (2 of 3 engines missing) | Avoid — decompose into `<select>` | Firefox + Safari ship pickers |
 | Clipboard (async) | Moderate | Trustworthy | Direct delegation | -- |
 | File System Access | Low-Moderate | Immature (single vendor) | Avoid | Second engine ships |
-| Navigation API | Moderate (ClientRouter exit) | Maturing (Baseline Newly Available) | No direct use — CRZ apps do not intercept navigation | Baseline Widely Available |
+| Navigation API | Moderate (ClientRouter exit) | Maturing (Baseline Newly Available) | No direct use — CRZ navigation is native (`<a>`, `<form>`) | Baseline Widely Available |
 
 ---
 
@@ -197,7 +197,7 @@ Last reviewed: 2026-07
 
 ### CRZ Strategy: No direct use
 
-- CRZ applications do not intercept navigation: navigation is `<a>` and `<form>`, and islands never call `history.pushState()` (see skill/crz.md ViewTransition rules). There is no application-level use case
+- CRZ applications navigate natively: `<a>` and `<form>`, no ClientRouter, and islands never call `history.pushState()` (see skill/crz.md ViewTransition rules). There is no application-level use case for navigation interception
 - The API's relevance to CRZ is as exit condition 2 for the ClientRouter (see `clientrouter-exit.md`) — that condition is now met
 - If a future requirement demands navigation interception, isolate it in a single island and treat it as a crumple zone
 

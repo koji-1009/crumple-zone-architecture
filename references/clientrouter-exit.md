@@ -57,20 +57,20 @@ The Navigation API is supported in all major browsers, including Safari.
 
 The project accepts that browsers without View Transition API support get standard page navigation, OR the API reaches Baseline Widely Available.
 
-**Current assessment**: Open. Chromium (126+) and Safari (18.2+) ship cross-document transitions; Firefox ships same-document only. For most CRZ projects the first branch of this condition is acceptable today: Firefox users get standard page navigation — experience degradation, not functional failure.
+**Current assessment**: Open. Chromium (126+) and Safari (18.2+) ship cross-document transitions; Firefox ships same-document only. For most CRZ projects the first branch of this condition is acceptable today: Firefox users get standard page navigation — experience degradation, not functional failure. Track Firefox progress and Baseline status via [web-platform-dx/web-features](https://github.com/web-platform-dx/web-features).
 
 ## Migration Phases
 
 | Phase | Trigger | Action |
 | --- | --- | --- |
-| **Current** | Now | Classify ClientRouter as crumple zone. Fix upstream defects. Minimize coupling to Astro lifecycle events. Avoid `transition:persist`. Write view transition CSS using standard properties alongside Astro directives |
-| **Preparation** (active, 2026-07) | Exit conditions 1-2 met | Audit `transition:persist` usage. Migrate shared state to URL/cookies/server session. Test `@view-transition` CSS on feature branches |
+| **Containment** | Until exit conditions 1-2 are met | Classify ClientRouter as crumple zone. Fix upstream defects. Minimize coupling to Astro lifecycle events. Avoid `transition:persist`. Write view transition CSS using standard properties alongside Astro directives |
+| **Preparation** (active since 2026-07) | Exit conditions 1-2 met | Audit `transition:persist` usage. Migrate shared state to URL/cookies/server session. Test `@view-transition` CSS on feature branches |
 | **Migration** | All exit conditions met | Remove `<ClientRouter />`. Replace with `@view-transition` at-rule. Replace `transition:name` with CSS `view-transition-name`. Replace Astro lifecycle listeners with `pagereveal` / `DOMContentLoaded` / `load` |
 | **Post-migration** | Migration complete | Delete crumple zone classification. Full browser-native cross-document view transitions |
 
 ## New Projects: Native First
 
-Exit conditions 1 and 2 are met; only the fallback condition remains open. For a new CRZ project, invert the default: start with the `@view-transition` CSS at-rule and no ClientRouter. Firefox users get standard page navigation — the crumple zone starts at zero thickness instead of being thinned later.
+Exit conditions 1 and 2 are met; only the fallback condition remains open. New CRZ projects start with the `@view-transition` CSS at-rule and no ClientRouter — this is the default in skill/crz.md and architecture.md section 4. Firefox users get standard page navigation — the crumple zone starts at zero thickness instead of being thinned later.
 
 Adopt ClientRouter only when a project concretely requires one of its remaining capabilities (fallback simulation for unsupported browsers, script re-execution control, lifecycle events). Existing projects follow the migration phases above.
 
