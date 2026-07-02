@@ -2,7 +2,7 @@
 
 Individual assessments applying the maturity framework from architecture.md section 5.4. Each entry includes a revisit condition — a concrete trigger that would change the assessment.
 
-Last reviewed: 2026-03
+Last reviewed: 2026-07
 
 ## Summary
 
@@ -15,6 +15,7 @@ Last reviewed: 2026-03
 | `<input type="month/week">` | Moderate-High | Immature (2 of 3 engines missing) | Avoid — decompose into `<select>` | Firefox + Safari ship pickers |
 | Clipboard (async) | Moderate | Trustworthy | Direct delegation | -- |
 | File System Access | Low-Moderate | Immature (single vendor) | Avoid | Second engine ships |
+| Navigation API | Moderate (ClientRouter exit) | Maturing (Baseline Newly Available) | No direct use — CRZ navigation is native (`<a>`, `<form>`) | Baseline Widely Available |
 
 ---
 
@@ -178,6 +179,29 @@ Last reviewed: 2026-03
 - Same analysis applies to `<input type="week">`
 
 **Revisit condition**: Firefox and Safari ship native month/week picker widgets. No movement from Firefox. This may never reach Baseline.
+
+---
+
+## 8. Navigation API
+
+**Failure pattern**: Implementation lag (converging)
+
+### Maturity Assessment
+
+| Axis | Rating | Detail |
+| --- | --- | --- |
+| Cross-Platform Parity | Marginal | Baseline Newly Available since 2026-01: Chrome, Edge, Firefox 147, Safari 26.2. Safari lacks `precommitHandler` |
+| Composability | Pass | Promise-based, standard event model (`navigate` event), designed as the History API replacement |
+| Failure Mode Transparency | Pass | Feature detection via `'navigation' in window` is clean. Absence degrades to standard navigation |
+| Specification Stability | Marginal | WHATWG HTML Living Standard, but only Newly Available — Widely Available follows ~30 months after |
+
+### CRZ Strategy: No direct use
+
+- CRZ applications navigate natively: `<a>` and `<form>`, no ClientRouter, and islands never call `history.pushState()` (see skill/crz.md ViewTransition rules). There is no application-level use case for navigation interception
+- The API's relevance to CRZ is as exit condition 2 for the ClientRouter (see `clientrouter-exit.md`) — that condition is now met
+- If a future requirement demands navigation interception, isolate it in a single island and treat it as a crumple zone
+
+**Revisit condition**: Baseline Widely Available (~2028), or a CRZ use case for navigation interception emerges. Neither changes current guidance.
 
 ---
 

@@ -126,11 +126,11 @@ controlled component は値を HTML 層からフレームワーク層へ移動�
 
 画面遷移と操作フィードバックはクランプルゾーンとして設計する。壊れても機能は動作し、体験が劣化するだけに止める。
 
-`ViewTransition` — MPAのページ切り替えに適用し、SPAのような遷移体験を得る:
+`ViewTransition` — ブラウザネイティブの cross-document view transitions でMPAのページ切り替えをアニメーションする:
 
-* `ClientRouter` をレイアウトに追加するだけでデフォルトの crossfade がページ全体に適用される — 追加のディレクティブは不要
-* `transition:animate` や `transition:name` はデフォルトの crossfade には不要。指定するとコンポーネントごとに `view-transition-name` CSS が生成され、個別の調整が必要になる。省略すればこのオーバーヘッドを回避できる
-* 非対応ブラウザでは通常のMPA遷移にフォールバックする
+* グローバルスタイルシートに `@view-transition` CSS at-rule を宣言する。デフォルトの crossfade がページ全体に適用される — JavaScript もフレームワークも関与しない
+* `<ClientRouter />` は推奨しない。MPA を実行時に SPA へ変換するものであり、このアーキテクチャが最小化しようとするクライアントサイドルーティング層を再導入してしまう。理由と既存プロジェクトの移行手順は `references/clientrouter-exit.md` を参照
+* 非対応ブラウザでは通常のMPA遷移にフォールバックする — 機能の故障ではなく体験の劣化に止まる
 
 操作フィードバック — 壊れても操作自体は完了する:
 

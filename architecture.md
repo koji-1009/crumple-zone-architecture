@@ -122,11 +122,11 @@ When authentication is required, middleware checks auth on every request and red
 
 Page transitions and interaction feedback are designed as crumple zones. If they break, functionality continues; the impact is contained to experience degradation.
 
-`ViewTransition` — apply to MPA page switches for SPA-equivalent transitions:
+`ViewTransition` — browser-native cross-document view transitions animate MPA page switches:
 
-* Add `ClientRouter` to the layout. The default crossfade applies to the entire page — no further directives needed
-* `transition:animate` and `transition:name` are unnecessary for the default crossfade. Specifying them generates per-component `view-transition-name` CSS, requiring individual tuning for each targeted Astro component. Omitting them avoids this overhead
-* In unsupported browsers, falls back to standard MPA navigation
+* Declare the `@view-transition` CSS at-rule in a global stylesheet. The default crossfade applies to the entire page — no JavaScript, no framework involvement
+* `<ClientRouter />` is not recommended: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes. See `references/clientrouter-exit.md` for the reasoning and the migration path for existing projects
+* In unsupported browsers, falls back to standard MPA navigation — experience degradation, not functional failure
 
 Interaction feedback — if it breaks, the operation still completes:
 

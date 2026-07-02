@@ -2,7 +2,7 @@
 
 Build healthy Astro applications with Crumple Zone Architecture. Trust the browser, design for failure modes, minimize framework dependency.
 
-Prerequisite: Astro 6+ with `output: 'server'`. This architecture requires server-side rendering for middleware, API routes, and data fetching in frontmatter.
+Prerequisite: Astro 7+ with `output: 'server'`. This architecture requires server-side rendering for middleware, API routes, and data fetching in frontmatter.
 
 ## Priorities
 
@@ -29,6 +29,8 @@ When concerns conflict, choose in this order:
    * Highest risk. Minimize this layer
 
 Rule: always ask "what happens if this breaks?" and implement in the lowest-numbered layer that accomplishes the task.
+
+HTML output notes (Astro 7): unclosed tags are build errors. Invalid nesting (e.g., `<div>` inside `<p>`) is passed through as-is — the browser's error recovery restructures the DOM, so the rendered DOM diverges from the source. Author structurally valid HTML; the compiler does not correct it. Whitespace follows JSX rules by default (`compressHTML: 'jsx'`): whitespace within a single line is preserved (a space between two inline elements on the same line survives), while whitespace and line breaks around elements are removed. The one trap: inline elements separated by a line break lose their spacing — keep spaced inline elements on the same line, or write the space explicitly.
 
 Islands in layers 3-4 should be wrapped in each framework's error boundary mechanism. If the island crashes, display a fallback UI instead of a blank space. This structurally enforces the isolation guarantee — the rest of the page remains intact.
 
@@ -117,7 +119,7 @@ Island verification — before writing an island, confirm each hook is necessary
 * useState for scroll/carousel position → CSS `overflow-x: auto`. No island needed
 * useState for filter/sort selection → URL query params + server-side filtering. No island needed
 * useEffect fetching data → move to frontmatter. Never fetch in islands
-* useEffect syncing URL → URL is canonical. Use `<a>` or `navigate()`
+* useEffect syncing URL → URL is canonical. Use `<a>` or `window.location.assign()`
 * useEffect for DOM manipulation without state → use `<script>` tag
 
 If all state values are replaceable, the island is unnecessary — rewrite as `.astro` component or `<script>`.
@@ -175,7 +177,7 @@ Never use:
 
 Server handles correctness, client provides feedback as a crumple zone.
 
-Client-initiated mutations that accept user input requiring validation must use Astro Actions (`astro:actions`). Actions provide type-safe server functions with built-in Zod validation — the caller gets compile-time type errors if the contract is violated. Mutations without user input (logout, session clear) use `<form method="POST">` with PRG — no Action needed. Navigation without data change uses `<a>` or `navigate()` — not an Action.
+Client-initiated mutations that accept user input requiring validation must use Astro Actions (`astro:actions`). Actions provide type-safe server functions with built-in Zod validation — the caller gets compile-time type errors if the contract is violated. Mutations without user input (logout, session clear) use `<form method="POST">` with PRG — no Action needed. Navigation without data change uses `<a>` — not an Action.
 
 ```typescript
 // src/actions/index.ts
@@ -229,8 +231,8 @@ Client feedback (crumple zone):
 
 1. Submission starts → disable button, show progress
 2. Success → reconstruct from canonical sources:
-   * `navigate(url)` (ClientRouter) — soft reload with ViewTransition, preferred when ClientRouter is active
-   * `window.location.reload()` — hard reload, always works
+   * `window.location.reload()` — redisplay the same page
+   * `window.location.assign(url)` — move to another page
 3. Failure → re-enable button, show error
 
 If feedback breaks, the action still completes or fails correctly on the server.
@@ -289,32 +291,31 @@ export const onRequest = defineMiddleware(async (context, next) => {
 });
 ```
 
+Advanced routing (`src/fetch.ts`):
+
+* `src/fetch.ts` is a reserved filename. Creating it replaces Astro's default request pipeline entirely — the exported `fetch()` must call the `astro()` handler (or compose `astro/fetch` handlers), otherwise middleware, Actions, and page rendering never run and every route breaks
+* Do not create this file by default. Use it only for cross-cutting infrastructure that middleware cannot express (structured logging around pipeline phases, tracing, Hono interop), and always delegate to `astro()`
+* Auth and authorization stay in middleware. Do not move them into `fetch.ts` — one visible security boundary, not two
+
 ## ViewTransition
 
-Crumple zone — if it breaks, the page still loads.
+Crumple zone — if transitions break or are unsupported, navigation still works.
 
-```astro
----
-import { ClientRouter } from "astro:transitions";
----
-<head>
-  <ClientRouter />
-</head>
-<body>
-  <Header />
-  <Sidebar />
-  <main>
-    <slot />
-  </main>
-</body>
+Use browser-native cross-document view transitions. Do not add `<ClientRouter />` — it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes.
+
+```css
+/* global stylesheet */
+@view-transition {
+  navigation: auto;
+}
 ```
 
-* Add `<ClientRouter />` to the layout. The default crossfade applies to the entire page — no further directives needed
-* `transition:animate` and `transition:name` are unnecessary for the default crossfade. Specifying them generates per-component `view-transition-name` CSS, requiring individual tuning for each targeted Astro component. Omitting them avoids this overhead
-* Use `astro:page-load` instead of `DOMContentLoaded`
-* Never call `history.pushState()` or `history.replaceState()` in islands — ClientRouter stores navigation data in `history.state`. Overwriting it breaks browser back/forward. To update URL query params (filters, pagination), use `navigate()` from `astro:transitions/client` or `<a>` with the new query string
-* Disable when the layout component changes (e.g., login → dashboard) — use `window.location.href` for hard navigation instead of `navigate()`
-* Disable for non-HTML responses
+* The default crossfade applies to the entire page — no per-component directives needed
+* Unsupported browsers (currently Firefox) fall back to standard MPA navigation — experience degradation, not functional failure
+* Every navigation is a full page load. Use `DOMContentLoaded` (or `pagereveal` for transition timing), and write idempotent `<script>` initialization — scripts run on every page load
+* Never call `history.pushState()` or `history.replaceState()` in islands — the URL is a canonical source. To update query params (filters, pagination), use `<a>` or `window.location.assign()` with the new query string
+* Customize with standard CSS only: `view-transition-name`, `::view-transition-old()` / `::view-transition-new()`
+* For migrating existing ClientRouter projects, see references/clientrouter-exit.md
 
 ## Project Structure
 

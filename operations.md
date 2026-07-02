@@ -21,6 +21,13 @@ Implementation and review should be separate agents. A single agent writing and 
 * Review agent reads architecture.md and extensions.md, then evaluates the diff
 * Human operator reviews the final diff as the last gate
 
+## Execution Environment
+
+Astro 7 ships agent-oriented tooling that supports this workflow:
+
+* `astro dev --background` — a background dev server mode that prevents implementation agents from spawning duplicate processes
+* JSON logging — structured log output for aggregation tools and agent parsing
+
 ## Treating CRZ as a Compiler
 
 CRZ is not a set of suggestions — it is a specification checker. Like a compiler, it does not ask "does this work?" but "does this conform to the specification?" Ignoring a CRZ rule because the code "works right now" is the same structural mistake as ignoring a compiler warning because the tests pass.
