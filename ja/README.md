@@ -35,13 +35,13 @@
 ### Claude Code（プロジェクト）
 
 ```bash
-mkdir -p .claude/commands && curl -o .claude/commands/crz.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
+mkdir -p .claude/skills/crz && curl -o .claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
 ### Claude Code（グローバル）
 
 ```bash
-curl -o ~/.claude/commands/crz.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
+mkdir -p ~/.claude/skills/crz && curl -o ~/.claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
 ### Cursor
@@ -56,7 +56,7 @@ mkdir -p .cursor/rules && curl -o .cursor/rules/crz.md https://raw.githubusercon
 curl -o AGENTS.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
-Claude Code では `/crz` を呼び出してから開発を始めてください。
+Claude Code では、タスクがスキルの description に合致すると自動でロードされる。`/crz` による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、スキルの description がそれを自動回復に変える。
 
 ## License
 
