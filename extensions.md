@@ -195,6 +195,8 @@ Server (canonical source)
 
 Cache layers are crumple zones by nature: if they break or become stale, the server corrects on the next reachable request. No state authority moves to the client.
 
+Astro 7's route caching API is a framework-native implementation of this layer: routes declare cache directives in code, and Astro propagates them to the hosting platform's CDN. Declaring cache behavior in the route keeps the boundary visible, while the decision itself remains a performance one — no state authority moves.
+
 In SSR environments, client-side caching is often redundant for server-readable canonical sources (cookies, databases). Every navigation reconstructs state from the canonical source via SSR. A client-side cache is justified when: (a) the canonical source is client-only (localStorage), (b) network latency must be hidden (offline-first), or (c) client-side navigation bypasses SSR (e.g., ViewTransition with ClientRouter).
 
 Example: Firestore uses IndexedDB as a local cache, with the SDK managing synchronization. As a cache layer (2.7), it provides offline reads and reduced latency. As a sync layer (2.2), bidirectional synchronization elevates the cache to a canonical source — reads become idempotent regardless of connectivity. The two patterns share the same infrastructure but differ in architectural role.

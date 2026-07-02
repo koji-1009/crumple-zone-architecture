@@ -2,7 +2,7 @@
 
 Build healthy Astro applications with Crumple Zone Architecture. Trust the browser, design for failure modes, minimize framework dependency.
 
-Prerequisite: Astro 6+ with `output: 'server'`. This architecture requires server-side rendering for middleware, API routes, and data fetching in frontmatter.
+Prerequisite: Astro 7+ with `output: 'server'`. This architecture requires server-side rendering for middleware, API routes, and data fetching in frontmatter.
 
 ## Priorities
 
@@ -29,6 +29,8 @@ When concerns conflict, choose in this order:
    * Highest risk. Minimize this layer
 
 Rule: always ask "what happens if this breaks?" and implement in the lowest-numbered layer that accomplishes the task.
+
+HTML output notes (Astro 7): unclosed tags are build errors. Invalid nesting (e.g., `<div>` inside `<p>`) is passed through as-is — the browser's error recovery restructures the DOM, so the rendered DOM diverges from the source. Author structurally valid HTML; the compiler does not correct it. Whitespace between inline elements is stripped by JSX rules by default (`compressHTML: 'jsx'`); set `compressHTML: true` in astro.config so whitespace semantics stay owned by HTML, not JSX.
 
 Islands in layers 3-4 should be wrapped in each framework's error boundary mechanism. If the island crashes, display a fallback UI instead of a blank space. This structurally enforces the isolation guarantee — the rest of the page remains intact.
 
@@ -288,6 +290,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   return next();
 });
 ```
+
+Advanced routing (`src/fetch.ts`):
+
+* `src/fetch.ts` is a reserved filename — Astro imports it automatically to intercept the request pipeline before middleware and Actions
+* Auth and authorization stay in middleware. Do not move them into `fetch.ts` — one visible security boundary, not two
+* Create `fetch.ts` only for cross-cutting infrastructure (structured logging, tracing, Hono interop). If none is needed, do not create the file
 
 ## ViewTransition
 
