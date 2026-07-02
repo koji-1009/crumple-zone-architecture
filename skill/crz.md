@@ -57,22 +57,21 @@ Pages combine semantic HTML for structure with components at concern boundaries:
 </Layout>
 ```
 
-The page file contains no rendering logic — frontmatter (data fetching), layout, and component composition only. Rendering logic and data display live in extracted components.
+The page file holds frontmatter (data fetching, PRG handling), layout, the semantic HTML skeleton (landmarks, headings), and component composition — including conditional composition. Data display (lists, tables, cards, field groups) lives in extracted components. A page-level `<script>` is allowed only for behavior that spans multiple sections (see Script Behavior).
 
 Extraction is the default, not the exception. When building a page, actively look for splittable components — any section you can name is a component. Signals, strongest first:
 
-* Its markup carries `<script>` behavior, or the same script wiring appears twice (see Script Behavior) — repeated JS is the strongest marker of a component boundary
+* It carries `<script>` behavior — repeated wiring is the strongest boundary marker (rule in Script Behavior)
 * It fetches its own data (enables partial failure pattern)
 * It has independent failure modes (limits blast radius)
-* It is an independent edit target (write-unit: an edit mistake inside a small component cannot break the page)
 
-Within a single page, extraction needs no reuse justification — decomposing `.astro` is free at runtime (compiles to HTML, props as the only interface). Reuse across 2+ pages is the design-component context: promote to `shared/components/` (project-wide) or the feature's `components/` (feature-wide).
+Within a single page, extraction needs no reuse justification — decomposing `.astro` is free at runtime (compiles to HTML; props and slots are the only interface). Reuse across 2+ pages is the design-component context: promote to `shared/components/` (project-wide) or the feature's `components/` (feature-wide). Extraction bounds what an edit can touch — not runtime errors: an uncaught frontmatter error in any component still fails the whole SSR render (runtime containment comes from the partial failure pattern).
 
-Inline HTML remains only for nameless structural glue (grid frames, dividers). Smell: an `.astro` file over ~100 lines — look for a boundary.
+Inline HTML remains only for the skeleton and nameless structural glue (grid frames, dividers). Smell: an `.astro` file over ~100 lines — look for a boundary.
 
 Guards — split wide, not deep:
 
-* Compose one level per page where possible (page → sections). No pass-through components that only forward props
+* Compose one level per page (page → sections) by default. A deeper level needs its own nameable concern — never a pass-through component that only forwards props
 * Do not extract what you cannot name — a component without a nameable concern is fragmentation, not decomposition
 
 Use Astro (.astro) by default:
@@ -132,18 +131,20 @@ Island verification — before writing an island, confirm each hook is necessary
 
 If all state values are replaceable, the island is unnecessary — rewrite as `.astro` component or `<script>`.
 
+For the fuller decision model including navigation-first evaluation, see architecture.md section 5.1.
+
 ### Script Behavior
 
 `<script>` handles layer-1 behavior: DOM operations without local state. Keep each script next to the markup it drives:
 
 * One component, one concern, one `<script>`. A page script wiring two unrelated widgets is the signal to split — extract each widget's markup together with its script into a dedicated component
 * Repeated script behavior is a component-boundary detector. The same wiring appearing twice — across sections or pages — marks a component to extract, owning both the markup and the script
-* Cross-cutting behavior that reads fields across sections is the parent's concern. Keep it at the parent — pushing it into a child forces the child to query ancestor DOM
+* Cross-cutting behavior that reads fields across sections is the parent's concern. Keep it at the parent — a page-level `<script>` is the legitimate home for section-spanning behavior. Pushing it into a child forces the child to query ancestor DOM
 * The goal is locality of source, not DOM sandboxing. Astro `<script>` is module-scoped, and document-wide `querySelector` is acceptable. Do not add wrapper elements or `data-scope` attributes just to narrow queries
 * A component's `<script>` runs once per page even when the component renders N times. Wire with `querySelectorAll` or `data-*` lookups and per-element listeners — never assume a single instance
 * The moment a behavior needs local state, it becomes an island (see decision test) — split the markup, not the script
 
-For the fuller decision model including navigation-first evaluation, see architecture.md section 5.1; for the reasoning behind granularity and behavior locality, section 5.5.
+For the reasoning behind granularity and behavior locality, see architecture.md section 5.5.
 
 ## Pages and Data
 
@@ -398,7 +399,7 @@ After applying CRZ principles, review every change against these checks before f
 4. **Simplicity check**
    * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (SSR props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
 5. **Component decomposition check**
-   * Pages contain no rendering logic — frontmatter, layout, and component composition only. Within each page, every nameable section is extracted; inline HTML remains only for nameless structural glue. Repeated script wiring marks a missed component boundary. An `.astro` file over ~100 lines needs a boundary search. No pass-through components that only forward props.
+   * Pages hold frontmatter, layout, semantic skeleton, and composition — data display lives in components; a page-level `<script>` only for section-spanning behavior. Every nameable section is extracted; inline HTML remains for the skeleton and nameless glue. The same markup on 2+ pages → promote to `shared/components/` (design-component context). Repeated script wiring marks a missed component boundary. An `.astro` file over ~100 lines needs a boundary search. No pass-through components that only forward props.
 6. **Island necessity check**
    * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, or `<script>` DOM call? If yes for all values, the island should be an `.astro` component.
 7. **Document consistency check**
