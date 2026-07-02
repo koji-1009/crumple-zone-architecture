@@ -46,6 +46,12 @@ mkdir -p .claude/skills/crz && curl -o .claude/skills/crz/SKILL.md https://raw.g
 mkdir -p ~/.claude/skills/crz && curl -o ~/.claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
+Migrating from the previous slash-command install: remove the old file, or it keeps serving outdated guidance under the same `/crz` name:
+
+```bash
+rm -f .claude/commands/crz.md ~/.claude/commands/crz.md
+```
+
 ### Cursor
 
 ```bash
@@ -74,13 +80,19 @@ mkdir -p .claude/skills/sieve && curl -o .claude/skills/sieve/SKILL.md https://r
 mkdir -p ~/.claude/skills/sieve && curl -o ~/.claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve.md
 ```
 
+Migrating from the previous slash-command install:
+
+```bash
+rm -f .claude/commands/sieve.md ~/.claude/commands/sieve.md
+```
+
 #### Cursor
 
 ```bash
 curl -o .cursor/rules/sieve.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve.md
 ```
 
-For Claude Code, the skills load automatically when the task matches their description — crz for Astro implementation, sieve for styling. `/crz` and `/sieve` invoke them explicitly, which remains the deterministic path. Forgetting to invoke a command is a silent failure; the skill description turns it into automatic recovery.
+For Claude Code, the skills load automatically when the task matches — each file's opening paragraph serves as the skill description. `/crz` and `/sieve` invoke them explicitly, which remains the deterministic path. Forgetting to invoke a command is a silent failure; automatic loading turns it into recovery.
 
 ## License
 

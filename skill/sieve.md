@@ -1,8 +1,3 @@
----
-name: sieve
-description: Choose the right CSS implementation for Astro projects — styling method, design tokens, and CSS-layer independence from JavaScript. Use for styling tasks alongside the crz skill.
----
-
 # Sieve — Design Implementation Strategy for Astro
 
 Filter design requirements into the right CSS implementation. Styling lives in the CSS layer — independent of JavaScript runtime.

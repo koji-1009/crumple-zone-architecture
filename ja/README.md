@@ -44,6 +44,12 @@ mkdir -p .claude/skills/crz && curl -o .claude/skills/crz/SKILL.md https://raw.g
 mkdir -p ~/.claude/skills/crz && curl -o ~/.claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
+以前の slash command 形式からの移行では、古いファイルを削除する。残っていると同じ `/crz` 名で古い内容が使われ続ける:
+
+```bash
+rm -f .claude/commands/crz.md ~/.claude/commands/crz.md
+```
+
 ### Cursor
 
 ```bash
@@ -56,7 +62,7 @@ mkdir -p .cursor/rules && curl -o .cursor/rules/crz.md https://raw.githubusercon
 curl -o AGENTS.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
-Claude Code では、タスクがスキルの description に合致すると自動でロードされる。`/crz` による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、スキルの description がそれを自動回復に変える。
+Claude Code では、タスクが合致すると自動でロードされる — ファイル冒頭の段落がスキルの description として機能する。`/crz` による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、自動ロードがそれを回復に変える。
 
 ## License
 
