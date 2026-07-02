@@ -49,7 +49,7 @@ Partial failure: when frontmatter fetches from multiple sources, catch each inde
 
 ### Page Structure
 
-Pages combine semantic HTML for structure with components at reuse and failure boundaries:
+Pages combine semantic HTML for structure with components at concern boundaries:
 
 ```astro
 <Layout>
@@ -64,16 +64,23 @@ Pages combine semantic HTML for structure with components at reuse and failure b
 </Layout>
 ```
 
-The page file shows structure (HTML tags) and composition (components). Rendering logic and data display belong in extracted components.
+The page file contains no rendering logic — frontmatter (data fetching), layout, and component composition only. Rendering logic and data display live in extracted components.
 
-Extract an Astro component when:
+Extraction is the default, not the exception. When building a page, actively look for splittable components — any section you can name is a component. Signals, strongest first:
 
-* The same UI block appears on 2+ pages (reuse)
-* A section fetches data independently (enables partial failure pattern)
-* A section has independent failure modes (limits blast radius)
-* A section is a plausible independent edit target (write-unit: a small component is a small edit target, and an edit mistake in it cannot break the page)
+* Its markup carries `<script>` behavior, or the same script wiring appears twice (see Script Behavior) — repeated JS is the strongest marker of a component boundary
+* It fetches its own data (enables partial failure pattern)
+* It has independent failure modes (limits blast radius)
+* It is an independent edit target (write-unit: an edit mistake inside a small component cannot break the page)
 
-If none apply, inline HTML is sufficient. Decomposing into `.astro` components is free at runtime — they compile to HTML with props as the only interface — so when in doubt, cut smaller.
+Within a single page, extraction needs no reuse justification — decomposing `.astro` is free at runtime (compiles to HTML, props as the only interface). Reuse across 2+ pages is the design-component context: promote to `shared/components/` (project-wide) or the feature's `components/` (feature-wide).
+
+Inline HTML remains only for nameless structural glue (grid frames, dividers). Smell: an `.astro` file over ~100 lines — look for a boundary.
+
+Guards — split wide, not deep:
+
+* Compose one level per page where possible (page → sections). No pass-through components that only forward props
+* Do not extract what you cannot name — a component without a nameable concern is fragmentation, not decomposition
 
 Use Astro (.astro) by default:
 
@@ -137,7 +144,7 @@ If all state values are replaceable, the island is unnecessary — rewrite as `.
 `<script>` handles layer-1 behavior: DOM operations without local state. Keep each script next to the markup it drives:
 
 * One component, one concern, one `<script>`. A page script wiring two unrelated widgets is the signal to split — extract each widget's markup together with its script into a dedicated component
-* The same script behavior used on 2+ pages → one shared component owning both the markup and the script
+* Repeated script behavior is a component-boundary detector. The same wiring appearing twice — across sections or pages — marks a component to extract, owning both the markup and the script
 * Cross-cutting behavior that reads fields across sections is the parent's concern. Keep it at the parent — pushing it into a child forces the child to query ancestor DOM
 * The goal is locality of source, not DOM sandboxing. Astro `<script>` is module-scoped, and document-wide `querySelector` is acceptable. Do not add wrapper elements or `data-scope` attributes just to narrow queries
 * A component's `<script>` runs once per page even when the component renders N times. Wire with `querySelectorAll` or `data-*` lookups and per-element listeners — never assume a single instance
@@ -398,7 +405,7 @@ After applying CRZ principles, review every change against these checks before f
 4. **Simplicity check**
    * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (SSR props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
 5. **Component decomposition check**
-   * Is each page a skeleton of semantic HTML with components at reuse and failure boundaries? Extract when: used on 2+ pages, fetches data independently (partial failure), or has independent failure modes (blast radius). Pages should not contain inline rendering logic that belongs in a component.
+   * Pages contain no rendering logic — frontmatter, layout, and component composition only. Within each page, every nameable section is extracted; inline HTML remains only for nameless structural glue. Repeated script wiring marks a missed component boundary. An `.astro` file over ~100 lines needs a boundary search. No pass-through components that only forward props.
 6. **Island necessity check**
    * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, or `<script>` DOM call? If yes for all values, the island should be an `.astro` component.
 7. **Document consistency check**
