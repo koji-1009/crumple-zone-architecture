@@ -322,7 +322,6 @@ Use browser-native cross-document view transitions. Do not add `<ClientRouter />
 * Every navigation is a full page load. Use `DOMContentLoaded` (or `pagereveal` for transition timing), and write idempotent `<script>` initialization — scripts run on every page load
 * Never call `history.pushState()` or `history.replaceState()` in islands — the URL is a canonical source. To update query params (filters, pagination), use `<a>` or `window.location.assign()` with the new query string
 * Customize with standard CSS only: `view-transition-name`, `::view-transition-old()` / `::view-transition-new()`
-* For migrating existing ClientRouter projects, see references/clientrouter-exit.md
 
 ## Project Structure
 

@@ -125,7 +125,7 @@ Page transitions and interaction feedback are designed as crumple zones. If they
 `ViewTransition` — browser-native cross-document view transitions animate MPA page switches:
 
 * Declare the `@view-transition` CSS at-rule in a global stylesheet. The default crossfade applies to the entire page — no JavaScript, no framework involvement
-* `<ClientRouter />` is not recommended: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes. See `references/clientrouter-exit.md` for the reasoning and the migration path for existing projects
+* `<ClientRouter />` is not used: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes. See `references/clientrouter-exit.md` for the departure policy
 * In unsupported browsers, falls back to standard MPA navigation — experience degradation, not functional failure
 
 Interaction feedback — if it breaks, the operation still completes:
@@ -221,7 +221,7 @@ Three failure patterns determine the appropriate response and revisit timeline:
 
 The third pattern is the most insidious: the API passes feature detection, appears to work, and behaves differently per browser — all within spec.
 
-For individual API assessments and the ClientRouter exit strategy, see `references/`.
+For individual API assessments and the ClientRouter departure policy, see `references/`.
 
 ## 6. Premises
 

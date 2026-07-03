@@ -1,105 +1,27 @@
-# ClientRouter Exit Strategy
+# ClientRouter Departure
 
-> Status: Active — Preparation phase
+> Status: Closed — CRZ does not use `<ClientRouter />` (departure declared 2026-07)
 > Created: 2026-03
 > Updated: 2026-07
 > Scope: Astro `<ClientRouter />` -> browser-native cross-document view transitions
 
 ## Context
 
-Astro's `<ClientRouter />` (formerly `<ViewTransitions />`) was introduced in mid-2023 when no browser supported cross-document view transitions. It intercepts navigation, fetches the next page, swaps the DOM, and optionally animates the transition — effectively converting an MPA into an SPA at runtime.
+Astro's `<ClientRouter />` (formerly `<ViewTransitions />`) was introduced in mid-2023 when no browser supported cross-document view transitions. It intercepts navigation, fetches the next page, swaps the DOM, and optionally animates the transition — effectively converting an MPA into an SPA at runtime. In CRZ it was classified as a crumple zone: a layer that absorbs a browser API gap, designed to be removed when the platform catches up.
 
-In CRZ, the ClientRouter is classified as a **crumple zone**: a layer that absorbs browser API gaps and is designed to be removed when the platform catches up.
+The platform has caught up. The `@view-transition` CSS at-rule triggers cross-document transitions (Chromium 126+, Safari 18.2+), `view-transition-name` and the `::view-transition-*` pseudo-elements cover naming and animation customization, and the Navigation API reached Baseline Newly Available in 2026-01. The exit conditions this document set in 2026-03 are met, with one accepted trade-off: Firefox ships same-document transitions only, so Firefox users get standard page navigation — experience degradation, not functional failure, the same crumple-zone contract the experience layer applies everywhere (architecture.md section 4). Astro's documentation points the same way: using `<ClientRouter />` "will increasingly become unnecessary" as browser APIs evolve.
 
-Astro's documentation has since adopted the same framing: it now states that using `<ClientRouter />` "will increasingly become unnecessary" as browser APIs evolve, and recommends deciding whether client-side routing is still needed. The framework itself confirms the exit direction.
+## Policy
 
-## Approach: Fix Upstream, Then Remove
+CRZ does not use the ClientRouter. The `@view-transition` CSS at-rule is the architecture's page-transition mechanism — this is the default in skill/crz.md and architecture.md section 4. The crumple zone starts at zero thickness.
 
-CRZ does not passively wait for the platform to mature. Where the ClientRouter has known defects, fix them in Astro directly. Each fix reduces the gap between ClientRouter's current behavior and what the browser can handle natively. When the remaining gap is small enough, removal becomes a minor migration rather than a rewrite.
+Adopting the ClientRouter requires a concrete, named requirement that only it satisfies: fallback simulation for unsupported browsers, `transition:persist` (DOM preservation across navigations), script re-execution control, or Astro lifecycle events. CRZ removes these needs structurally — each page is a fresh render, scripts are idempotent, state lives in URL, cookie, or server session. Absent such a requirement, the ClientRouter is personally-owned scope that the browser now owns, and carrying it violates the first premise: trust the browser, calibrated to maturity.
 
-## Current Role
-
-### Already replaceable by browser-native APIs
-
-| Responsibility | Native alternative |
-| --- | --- |
-| Triggering cross-document view transitions | `@view-transition` CSS at-rule |
-| Named transitions (`transition:name`) | CSS `view-transition-name` property |
-| Basic fade/morph animations | Browser-native animation defaults |
-| Animation customization | `::view-transition-old()` / `::view-transition-new()` pseudo-elements, `view-transition-class` |
-
-### Still requires ClientRouter (or equivalent)
-
-| Responsibility | Why native is insufficient |
-| --- | --- |
-| `transition:persist` (DOM element preservation) | Full page load destroys DOM state. CRZ does not use this — each page is a fresh render |
-| Script re-execution control | Native cross-document reloads all scripts |
-| Fallback simulation for unsupported browsers | View Transition API cannot be polyfilled |
-| Astro lifecycle events (`astro:before-swap`, etc.) | No native equivalent with identical semantics |
-
-## Exit Conditions
-
-Three conditions must converge before ClientRouter can be fully removed:
-
-### 1. `transition:persist` becomes unnecessary
-
-The project does not rely on DOM element preservation across navigations, OR browser APIs provide an alternative mechanism.
-
-**Current assessment**: Most CRZ target applications (content sites, admin panels, CRUD tools) do not need this. If architecture already treats each page load as a fresh render (which CRZ encourages), this condition is met today.
-
-### 2. Navigation API reaches baseline
-
-The Navigation API is supported in all major browsers, including Safari.
-
-**Current assessment**: Met (2026-01). The Navigation API is Baseline Newly Available — Chrome, Edge, Firefox 147, and Safari 26.2 all ship it. Safari's implementation lacks `precommitHandler`, which does not affect this exit strategy. Baseline Widely Available follows ~30 months after.
-
-### 3. Fallback is no longer a concern
-
-The project accepts that browsers without View Transition API support get standard page navigation, OR the API reaches Baseline Widely Available.
-
-**Current assessment**: Open. Chromium (126+) and Safari (18.2+) ship cross-document transitions; Firefox ships same-document only. For most CRZ projects the first branch of this condition is acceptable today: Firefox users get standard page navigation — experience degradation, not functional failure. Track Firefox progress and Baseline status via [web-platform-dx/web-features](https://github.com/web-platform-dx/web-features).
-
-## Migration Phases
-
-| Phase | Trigger | Action |
-| --- | --- | --- |
-| **Containment** | Until exit conditions 1-2 are met | Classify ClientRouter as crumple zone. Fix upstream defects. Minimize coupling to Astro lifecycle events. Avoid `transition:persist`. Write view transition CSS using standard properties alongside Astro directives |
-| **Preparation** (active since 2026-07) | Exit conditions 1-2 met | Audit `transition:persist` usage. Migrate shared state to URL/cookies/server session. Test `@view-transition` CSS on feature branches |
-| **Migration** | All exit conditions met | Remove `<ClientRouter />`. Replace with `@view-transition` at-rule. Replace `transition:name` with CSS `view-transition-name`. Replace Astro lifecycle listeners with `pagereveal` / `DOMContentLoaded` / `load` |
-| **Post-migration** | Migration complete | Delete crumple zone classification. Full browser-native cross-document view transitions |
-
-## New Projects: Native First
-
-Exit conditions 1 and 2 are met; only the fallback condition remains open. New CRZ projects start with the `@view-transition` CSS at-rule and no ClientRouter — this is the default in skill/crz.md and architecture.md section 4. Firefox users get standard page navigation — the crumple zone starts at zero thickness instead of being thinned later.
-
-Adopt ClientRouter only when a project concretely requires one of its remaining capabilities (fallback simulation for unsupported browsers, script re-execution control, lifecycle events). Existing projects follow the migration phases above.
-
-## Design Guidelines for CRZ Projects Today
-
-To keep the exit path clean:
-
-1. **Do not depend on `transition:persist`**. Treat each page as a full render. Persist state in URL, cookie, or server session — not in the DOM
-
-2. **Do not depend on Astro lifecycle events for business logic**. Use `astro:before-swap`, `astro:after-swap`, `astro:page-load` only for progressive enhancement (loading indicators, analytics). Site must function without them
-
-3. **Avoid Astro-specific view transition directives**. CRZ does not use `transition:name` or `transition:animate` (see architecture.md Section 4). If a project does use them, write equivalent `view-transition-name` in CSS so that only the Astro directives need deletion at migration time
-
-4. **Do not rely on script de-duplication**. ClientRouter prevents re-execution of scripts already in the DOM. Native cross-document transitions reload all scripts. Write idempotent scripts or guard against double-initialization
-
-5. **Treat ClientRouter as a crumple zone, not infrastructure**. It appears in exactly one place (global layout `<head>`), and no component imports from `astro:transitions/client` for anything other than type annotations
-
-Astro 7 removed the exposed `astro:transitions` internals (event constants, `createAnimationScope()`, event type guards); lifecycle event names remain. Code following these guidelines is unaffected — which is the point of the guidelines.
-
-## Relationship to CRZ Core Principles
-
-This exit strategy applies CRZ's first premise: **trust the browser, calibrated to maturity**. The ClientRouter was necessary when the platform had a gap. As the gap closes, retaining it violates the premise — it becomes personally-owned scope that the browser should own.
-
-CRZ practitioners actively contribute to closing the gap. Fixing Astro's ClientRouter defects upstream accelerates the exit timeline for all CRZ projects — each merged PR makes the crumple zone thinner.
+CRZ practitioners contributed upstream fixes to the ClientRouter while it was still the necessary crumple zone. That work closed part of the gap this departure stands on.
 
 ## References
 
 - [Astro docs: View Transitions](https://docs.astro.build/en/guides/view-transitions/)
 - [Bag of Tricks: ClientRouter vs @view-transition comparison](https://events-3bg.pages.dev/jotter/feature-comparison/)
-- [Bag of Tricks: Migration path](https://events-3bg.pages.dev/jotter/migrate/)
 - [Astro roadmap discussion #770: Completion of the View Transition API](https://github.com/withastro/roadmap/discussions/770)
-- [Astro docs issue #10902: ClientRouter positioning](https://github.com/withastro/docs/issues/10902)
+- [web-platform-dx/web-features](https://github.com/web-platform-dx/web-features) — Firefox / Baseline tracking
