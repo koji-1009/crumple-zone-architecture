@@ -129,7 +129,7 @@ controlled component は値を HTML 層からフレームワーク層へ移動�
 `ViewTransition` — ブラウザネイティブの cross-document view transitions でMPAのページ切り替えをアニメーションする:
 
 * グローバルスタイルシートに `@view-transition` CSS at-rule を宣言する。デフォルトの crossfade がページ全体に適用される — JavaScript もフレームワークも関与しない
-* `<ClientRouter />` は推奨しない。MPA を実行時に SPA へ変換するものであり、このアーキテクチャが最小化しようとするクライアントサイドルーティング層を再導入してしまう。理由と既存プロジェクトの移行手順は `references/clientrouter-exit.md` を参照
+* `<ClientRouter />` は使わない。MPA を実行時に SPA へ変換するものであり、このアーキテクチャが最小化しようとするクライアントサイドルーティング層を再導入してしまう。離脱の方針は `references/clientrouter-exit.md` を参照
 * 非対応ブラウザでは通常のMPA遷移にフォールバックする — 機能の故障ではなく体験の劣化に止まる
 
 操作フィードバック — 壊れても操作自体は完了する:
@@ -225,7 +225,7 @@ URLパラメータとcookieのデフォルト値が重複する場合（例: 検
 
 3つ目のパターンが最も厄介である。機能検出を通過し、動作しているように見え、ブラウザごとに異なる動作をする — すべて仕様の範囲内で。
 
-個別APIの評価とClientRouterの移行計画は `references/` を参照。
+個別APIの評価とClientRouterの離脱方針は `references/` を参照。
 
 ### 5.5 コンポーネント粒度と振る舞いの局所性
 
