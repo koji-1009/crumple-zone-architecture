@@ -11,15 +11,15 @@ Last reviewed: 2026-08
 | API | Why the rule gives the wrong answer | Decision | Revisit |
 | --- | --- | --- | --- |
 | Drag and Drop | Widely Available, but the specification is built on mouse events | Avoid; Isolate where the interaction is a hard requirement | Rebuilt on Pointer Events |
-| `<select>` styling | Below the floor everywhere, and every JS alternative is worse than waiting | Isolate, as progressive enhancement | Every engine ships it enabled |
+| `<select>` styling | Enabled in one engine only, and every JS alternative is worse than waiting for the rest | Isolate, as progressive enhancement | Every engine ships it enabled |
 | Date/Time inputs | In every engine, but the picker cannot be styled and the format is locale-bound | Use with constraints; Isolate beyond basic date entry | Styling hooks extend to date inputs, or Temporal reaches every engine |
 | File System Access | Single vendor and off the standards track, so the rule never starts | Avoid — `<input type="file">`, blob download, server-side | Second engine plus standards track |
 | `<datalist>` | In every engine, but filtering and rendering are deliberately underspecified | Avoid for combobox; tolerate for trivial hints | Spec defines filtering and styling hooks |
 | `<input type="month/week">` | Specified everywhere, but two engines degrade it to a bare text field | Avoid — decompose into `<select>` | Those engines ship pickers |
 | CSS anchor positioning | Shipped in every engine while the module is still being revised | Use the settled subset and declare `position-anchor` explicitly | The module settles |
-| Speculation Rules | Below the floor, and prerender is single-engine | Optional enhancement, never load-bearing | Second engine ships |
-| Interest invokers (`interestfor`) | The interaction is hover-only, so support is not what decides it | Avoid | -- |
-| CloseWatcher | Below the floor, and `<dialog>` and popover already cover the need | Avoid | -- |
+| Speculation Rules | One engine ships it enabled; another has prefetch behind a preference, and prerender is single-engine | Optional enhancement, never load-bearing | Second engine ships it enabled |
+| Interest invokers (`interestfor`) | One engine, with a WebKit objection filed against the design | Avoid | Cross-vendor consensus |
+| CloseWatcher | Not in every engine, and `<dialog>` and popover already cover the need | Avoid | -- |
 
 ---
 
@@ -170,8 +170,8 @@ Last reviewed: 2026-08
 | API | Why the rule gives the wrong answer | CRZ Strategy |
 | --- | --- | --- |
 | CSS anchor positioning | Every engine shipped the core in 2026-01, so the rule reads it as settled, but the module is still being revised — `position-anchor` went through three initial values before `normal`, so each engine's earlier releases behave differently from its current one | Use the settled subset. Declare `position-anchor` explicitly rather than relying on its initial value, and declare a static fallback position so browsers below the floor place the element somewhere usable. Do not adopt a JS positioning library to close the gap |
-| Speculation Rules | Prefetch and prerender for MPA navigation, declared as a `<script type="speculationrules">` block. Below the floor, and prerender is single-engine | Optional enhancement only. Exclude state-changing URLs (sign-out, cart, language switch); handle `Sec-Purpose: prefetch` server-side. Never let perceived speed depend on it |
-| Interest invokers (`interestfor`) | Declarative hover, focus, and long-press triggers for popovers. Support is not the deciding factor — a hover-only affordance has no touch equivalent | Avoid. Use click-activated `command` / `popovertarget` |
+| Speculation Rules | Prefetch and prerender for MPA navigation, declared as a `<script type="speculationrules">` block. One engine ships it enabled; a second has prefetch behind a preference; prerender is in one engine only | Optional enhancement only. Exclude state-changing URLs (sign-out, cart, language switch); handle `Sec-Purpose: prefetch` server-side. Never let perceived speed depend on it |
+| Interest invokers (`interestfor`) | Declarative hover, focus, and long-press triggers for popovers. Shipped in one engine, with a WebKit objection filed against the design | Avoid. Use click-activated `command` / `popovertarget`, which needs no equivalent for each input modality |
 | CloseWatcher | Unifies Esc, Android back, and gesture dismissal for custom UI, which the rule would eventually admit | Avoid. `<dialog>` and popover already receive close requests; needing CloseWatcher usually means a custom overlay that should have been one of them |
 
 ---

@@ -151,6 +151,7 @@ Before reaching for `<script>` or an island, check whether markup already carrie
 
 ```astro
 ---
+const { item } = Astro.props;
 const dialogId = `confirm-${item.id}`;
 ---
 <button type="button" command="show-modal" commandfor={dialogId}>Delete</button>
@@ -173,8 +174,10 @@ Rules:
 
 * Always write `type="button"` on a command button. Inside a `<form>` it is required: with the default type the browser returns from the button's activation behavior before it ever reads `commandfor`, so the command never runs and nothing is reported. Outside a form it costs nothing and keeps one rule
 * Failures are silent by design. A `commandfor` naming no element, a command value that is neither built-in nor `--`-prefixed, and a dialog command aimed at something that is not a `<dialog>` all do nothing — no error, no event. IDs are derived from props here, so a bad interpolation fails this way
-* The command event is cancelable and does not bubble. `preventDefault()` on it cancels the built-in action, which is how a single listener on the dialog guards every close path at once; `preventDefault()` on the button's `click` stops the command event from firing at all. Not bubbling means document-level delegation receives nothing — wire each target
-* Do not open a dialog from a script. `dialog.showModal()` behind a click listener is the SPA-era form: it rebuilds in JS what the button already declares, and it stays inert until that listener attaches. Write `command="show-modal"`. The script form belongs in the project-level fallback below the support floor, and the fact that such a fallback is possible is not a reason to write one by hand
+* The command event is cancelable and does not bubble. `preventDefault()` on it cancels the built-in action, and `preventDefault()` on the button's `click` stops the command event from firing at all. Not bubbling means document-level delegation receives nothing — wire each target
+* That cancelation covers command buttons only. Esc, `<form method="dialog">`, and `close()` fire no command event, so a guard built on it lets those paths through. To hold every dismissal, close with `command="request-close"` and listen for the dialog's own `cancel` event, which Esc raises too — and keep `command="close"` and `<form method="dialog">` out of a dialog that needs guarding, since both close without raising it
+* Do not open a dialog from a script when a button opens it. `dialog.showModal()` behind a click listener is the SPA-era form: it rebuilds in JS what the button already declares, and it stays inert until that listener attaches. Write `command="show-modal"`. The script form belongs in the project-level fallback below the support floor, and the fact that such a fallback is possible is not a reason to write one by hand
+* Openings that no user action triggers are the exception — an Action failing, a session about to expire, a server-sent event. There is no button to declare, so the island that owns that outcome calls `showModal()`. This stays an exception because the trigger is a program event, not an interaction
 * Dialog open/close is not state. An island holding `isOpen` moves a layer-1 construct into layer 4. The island owns dialog content only when that content needs validation, dynamic fields, or multi-step flow
 * IDs are the binding. A component rendered N times needs N unique IDs — derive them from props, the same constraint as a component `<script>` running once for N instances
 * Modal overlays use `<dialog>` + `show-modal`. Non-modal ones (menus, toasts, hint panels) use `popover` + `popovertarget` or `command="toggle-popover"`. Accordions and disclosure use `<details>` / `<details name>`. Never build any of these from a `div` plus class toggling
@@ -478,6 +481,6 @@ After applying CRZ principles, review every change against these checks before f
 5. **Component decomposition check**
    * Pages hold frontmatter, layout, semantic skeleton, and composition — data display lives in components; a page-level `<script>` only for section-spanning behavior. Every nameable section is extracted; inline HTML remains for the skeleton and nameless glue. The same markup on 2+ pages → promote to `shared/components/` (design-component context). Repeated script wiring marks a missed component boundary. An `.astro` file over ~100 lines needs a boundary search. No pass-through components that only forward props.
 6. **Island necessity check**
-   * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, declarative invoker (`command` / `commandfor`, `popovertarget`, `<details>`), or `<script>` DOM call? If yes for all values, the island should be an `.astro` component. An `isOpen` boolean is always answered by the invoker.
+   * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, declarative invoker (`command` / `commandfor`, `popovertarget`, `<details>`), or `<script>` DOM call? If yes for all values, the island should be an `.astro` component. An `isOpen` boolean is answered by the invoker wherever a button opens the dialog, which is the usual case.
 7. **Document consistency check**
    * Does the change add, remove, or rename a feature, route, or component? If yes, verify that CLAUDE.md, PROJECT.md, and any other project documentation reflect the current state. Deleted features must be removed from documentation.
