@@ -1,21 +1,25 @@
-# Browser API Maturity Assessments
+# Browser API Exceptions
 
-Individual assessments applying the maturity framework from architecture.md section 5.4. Each entry includes a revisit condition — a concrete trigger that would change the assessment.
+Section 5.4 of architecture.md sets the adoption rule: at Baseline Newly Available, adoption is a judgment against the project's support floor; at Widely Available, reach stops being a question. Most APIs need nothing beyond that rule, and nothing about them is recorded here.
 
-Last reviewed: 2026-07
+This file holds the exceptions — the APIs where the rule gives the wrong answer, and what to do instead. Drag and Drop is Widely Available and must still be avoided. `<datalist>` passes feature detection and then behaves differently per engine. An entry earns its place by naming a behavior the rule cannot predict, together with the alternative to reach for. Support data belongs to MDN and Baseline, which maintain it; a status line appears here only where the decision turns on it.
+
+Last reviewed: 2026-08
 
 ## Summary
 
-| API | CRZ Relevance | Maturity | Strategy | Revisit |
-| --- | --- | --- | --- | --- |
-| Drag and Drop | High | Immature (structural flaw) | Avoid or Isolate | If rebuilt on Pointer Events |
-| `<select>` styling | Very High | Maturing (implementation lag) | Isolate (progressive enhancement) | All three engines ship |
-| Date/Time inputs | Very High | Functional but rough | Use with constraints | Temporal API + appearance customization |
-| `<datalist>` | High | Immature (underspecified) | Avoid for combobox; tolerate for trivial hints | Spec defines filtering + styling hooks |
-| `<input type="month/week">` | Moderate-High | Immature (2 of 3 engines missing) | Avoid — decompose into `<select>` | Firefox + Safari ship pickers |
-| Clipboard (async) | Moderate | Trustworthy | Direct delegation | -- |
-| File System Access | Low-Moderate | Immature (single vendor) | Avoid | Second engine ships |
-| Navigation API | Moderate (ClientRouter departure) | Maturing (Baseline Newly Available) | No direct use — CRZ navigation is native (`<a>`, `<form>`) | Baseline Widely Available |
+| API | Why the rule gives the wrong answer | Decision | Revisit |
+| --- | --- | --- | --- |
+| Drag and Drop | Widely Available, but the specification is built on mouse events | Avoid; Isolate where the interaction is a hard requirement | Rebuilt on Pointer Events |
+| `<select>` styling | Enabled in one engine only, and every JS alternative is worse than waiting for the rest | Isolate, as progressive enhancement | Every engine ships it enabled |
+| Date/Time inputs | In every engine, but the picker cannot be styled and the format is locale-bound | Use with constraints; Isolate beyond basic date entry | Styling hooks extend to date inputs, or Temporal reaches every engine |
+| File System Access | Single vendor and off the standards track, so the rule never starts | Avoid — `<input type="file">`, blob download, server-side | Second engine plus standards track |
+| `<datalist>` | In every engine, but filtering and rendering are deliberately underspecified | Avoid for combobox; tolerate for trivial hints | Spec defines filtering and styling hooks |
+| `<input type="month/week">` | Specified everywhere, but two engines degrade it to a bare text field | Avoid — decompose into `<select>` | Those engines ship pickers |
+| CSS anchor positioning | Shipped in every engine while the module is still being revised | Use the settled subset and declare `position-anchor` explicitly | The module settles |
+| Speculation Rules | One engine ships it enabled; another has prefetch behind a preference, and prerender is single-engine | Optional enhancement, never load-bearing | Second engine ships it enabled |
+| Interest invokers (`interestfor`) | One engine, with a WebKit objection filed against the design | Avoid | Cross-vendor consensus |
+| CloseWatcher | Not in every engine, and `<dialog>` and popover already cover the need | Avoid | -- |
 
 ---
 
@@ -38,7 +42,7 @@ Last reviewed: 2026-07
 - **Kanban-style boards**: If drag-and-drop is a hard requirement, isolate behind a single island component using `@dnd-kit` (Pointer Events internally). The island exposes `onCardMove(cardId, fromColumn, toColumn, position)` — no DnD API leaks beyond this boundary
 - **File upload drop zones**: The one legitimate use case. `drop` event with `dataTransfer.files` works reliably on desktop. Wrap in an island that provides `<input type="file">` as the primary interaction, with drop zone as progressive enhancement
 
-**Revisit condition**: A future spec revision rebuilding DnD on Pointer Events with mobile-first semantics. No such proposal currently exists.
+**Revisit condition**: A future spec revision rebuilding DnD on Pointer Events with mobile-first semantics.
 
 ---
 
@@ -50,7 +54,7 @@ Last reviewed: 2026-07
 
 | Axis | Rating | Detail |
 | --- | --- | --- |
-| Cross-Platform Parity | Fail | Shipped in Chrome/Chromium. Safari and Firefox have positive vendor positions but have not shipped |
+| Cross-Platform Parity | Fail | One engine ships it enabled. A second has it behind preferences, and the third has it in a preview release |
 | Composability | Pass (conditional) | When supported, integrates cleanly with CSS, supports rich HTML content in `<option>`, uses standard `::picker()` pseudo-elements |
 | Failure Mode Transparency | Pass | Non-supporting browsers render a classic `<select>` — functional but unstyled |
 | Specification Stability | Marginal | WHATWG Stage 2. Naming has changed multiple times (`<selectmenu>` -> `<selectlist>` -> `appearance: base-select`). Current API surface appears settled |
@@ -61,7 +65,7 @@ Last reviewed: 2026-07
 - Do NOT use JavaScript-based select replacements (Select2, React Select, Headless UI Listbox) in new CRZ projects
 - If rich content in options is a hard requirement and cross-browser consistency is mandatory today: a single `<RichSelect>` island that feature-detects support and falls back to native `<select>`
 
-**Revisit condition**: Baseline Newly Available (all three engines ship).
+**Revisit condition**: every engine ships it enabled.
 
 ---
 
@@ -85,32 +89,11 @@ Last reviewed: 2026-07
 - **Never** build a custom date picker from scratch. Accessibility, keyboard, and locale handling is enormous. Use a library wrapped behind a project-owned interface
 - For Safari empty-value display: CSS workaround or document as known cosmetic issue. Do not switch to `type="text"`
 
-**Revisit condition**: `appearance: base-select`-style customization extends to date inputs. Temporal API reaches Baseline.
+**Revisit condition**: `appearance: base-select`-style customization extends to date inputs. Temporal API reaches every engine.
 
 ---
 
-## 4. Clipboard API (Async)
-
-**Failure pattern**: None — trustworthy
-
-### Maturity Assessment
-
-| Axis | Rating | Detail |
-| --- | --- | --- |
-| Cross-Platform Parity | Pass | `navigator.clipboard.writeText()` works across all major browsers. `read()` has stricter permissions on Firefox |
-| Composability | Pass | Promise-based, integrates with async/await |
-| Failure Mode Transparency | Pass | Throws clear errors on permission denial. Feature detection is straightforward |
-| Specification Stability | Pass | W3C Candidate Recommendation. Baseline Widely Available |
-
-### CRZ Strategy: Direct delegation
-
-- Use `navigator.clipboard.writeText()` directly for copy operations
-- For paste requiring `read()`, check permissions and provide fallback (manual paste instruction)
-- No crumple zone needed
-
----
-
-## 5. File System Access API
+## 4. File System Access API
 
 **Failure pattern**: Implementation lag (severe — single vendor)
 
@@ -130,11 +113,11 @@ Last reviewed: 2026-07
 - File export: Blob URL + download attribute
 - Bulk operations: server-side via BFF
 
-**Revisit condition**: Second engine implementation and formal standards track. No current indication.
+**Revisit condition**: Second engine implementation and formal standards track.
 
 ---
 
-## 6. `<datalist>` Element
+## 5. `<datalist>` Element
 
 **Failure pattern**: Underspecification
 
@@ -154,11 +137,11 @@ Last reviewed: 2026-07
 - **Label/value distinction** (display "Tokyo, Japan" but submit "TYO"): Do not use `<datalist>`. Cross-browser rendering inconsistency
 - `<datalist>` occupies a dangerous middle ground — it looks like it should work for combobox use cases, but its underspecified behavior means you cannot predict what the user sees
 
-**Revisit condition**: WHATWG spec amended to define filtering behavior, label rendering, and styling hooks. Also if `appearance: base-select`-style customization extends to datalist. No concrete proposals exist.
+**Revisit condition**: WHATWG spec amended to define filtering behavior, label rendering, and styling hooks. Also if `appearance: base-select`-style customization extends to datalist.
 
 ---
 
-## 7. `<input type="month">` (and `type="week"`)
+## 6. `<input type="month">` (and `type="week"`)
 
 **Failure pattern**: Implementation lag
 
@@ -178,30 +161,18 @@ Last reviewed: 2026-07
 - **Option C** (if rich UI required): Island with custom month picker exposing `onMonthSelect(year, month)`
 - Same analysis applies to `<input type="week">`
 
-**Revisit condition**: Firefox and Safari ship native month/week picker widgets. No movement from Firefox. This may never reach Baseline.
+**Revisit condition**: Firefox and Safari ship native month/week picker widgets.
 
 ---
 
-## 8. Navigation API
+## 7. Shorter Exceptions
 
-**Failure pattern**: Implementation lag (converging)
-
-### Maturity Assessment
-
-| Axis | Rating | Detail |
+| API | Why the rule gives the wrong answer | CRZ Strategy |
 | --- | --- | --- |
-| Cross-Platform Parity | Marginal | Baseline Newly Available since 2026-01: Chrome, Edge, Firefox 147, Safari 26.2. Safari lacks `precommitHandler` |
-| Composability | Pass | Promise-based, standard event model (`navigate` event), designed as the History API replacement |
-| Failure Mode Transparency | Pass | Feature detection via `'navigation' in window` is clean. Absence degrades to standard navigation |
-| Specification Stability | Marginal | WHATWG HTML Living Standard, but only Newly Available — Widely Available follows ~30 months after |
-
-### CRZ Strategy: No direct use
-
-- CRZ applications navigate natively: `<a>` and `<form>`, no ClientRouter, and islands never call `history.pushState()` (see skill/crz.md ViewTransition rules). There is no application-level use case for navigation interception
-- The API's baseline status was an exit condition for the ClientRouter departure, declared 2026-07 (see `clientrouter-exit.md`)
-- If a future requirement demands navigation interception, isolate it in a single island and treat it as a crumple zone
-
-**Revisit condition**: Baseline Widely Available (~2028), or a CRZ use case for navigation interception emerges. Neither changes current guidance.
+| CSS anchor positioning | Every engine shipped the core in 2026-01, so the rule reads it as settled, but the module is still being revised — `position-anchor` went through three initial values before `normal`, so each engine's earlier releases behave differently from its current one | Use the settled subset. Declare `position-anchor` explicitly rather than relying on its initial value, and declare a static fallback position so browsers below the floor place the element somewhere usable. Do not adopt a JS positioning library to close the gap |
+| Speculation Rules | Prefetch and prerender for MPA navigation, declared as a `<script type="speculationrules">` block. One engine ships it enabled; a second has prefetch behind a preference; prerender is in one engine only | Optional enhancement only. Exclude state-changing URLs (sign-out, cart, language switch); handle `Sec-Purpose: prefetch` server-side. Never let perceived speed depend on it |
+| Interest invokers (`interestfor`) | Declarative hover, focus, and long-press triggers for popovers. Shipped in one engine, with a WebKit objection filed against the design | Avoid. Use click-activated `command` / `popovertarget`, which needs no equivalent for each input modality |
+| CloseWatcher | Unifies Esc, Android back, and gesture dismissal for custom UI, which the rule would eventually admit | Avoid. `<dialog>` and popover already receive close requests; needing CloseWatcher usually means a custom overlay that should have been one of them |
 
 ---
 
@@ -215,3 +186,4 @@ Last reviewed: 2026-07
 - [WHATWG Issue #9986: `<datalist>` behavior inconsistencies](https://github.com/whatwg/html/issues/9986)
 - [MDN browser-compat-data Issue #25723: datalist meta-issue](https://github.com/mdn/browser-compat-data/issues/25723)
 - [MDN: `<input type="month">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/month)
+- [MDN: Speculation Rules API](https://developer.mozilla.org/en-US/docs/Web/API/Speculation_Rules_API)

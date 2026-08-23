@@ -27,7 +27,7 @@ When concerns conflict, choose in this order.
 
 Correctness and experience were once a trade-off, but browser capabilities have closed much of that gap.
 
-`ViewTransition` introduced smooth page transitions. `<form>` + `FormData` provides form handling integrated with autofill and accessibility. `sessionStorage` enables UI state persistence across pages.
+`ViewTransition` introduced smooth page transitions. `<form>` + `FormData` provides form handling integrated with autofill and accessibility. `sessionStorage` enables UI state persistence across pages. `<dialog>` and the Popover API provide modality, focus management, and top-layer stacking, and `command` / `commandfor` connect a trigger to them in markup — the interaction pattern that most often justified a stateful component now needs no script at all.
 
 Delegating to the browser rather than reproducing in a framework makes correctness and experience compatible.
 
@@ -43,6 +43,12 @@ Delegating to the browser rather than reproducing in a framework makes correctne
 The reliability of the HTML layer depends on semantic correctness. A `<button>` provides keyboard interaction, focus management, and screen reader support from the browser; a `<div onclick>` provides none of these. Using the appropriate HTML elements is the precondition for this layer to serve as a trustworthy foundation.
 
 Browser-native APIs (Geolocation, Web Speech, etc.) also belong to this layer. Browser choice is the user's responsibility, outside the application provider's scope.
+
+Declarative invocation extends how far this layer reaches. `command` / `commandfor` on a `<button>` and `popovertarget` bind a control to its target in markup, and `<form method="dialog">` closes the dialog that contains it, so opening and closing a modal or a popover requires no listener. What changes is not only where the code lives but when the behavior exists: markup-declared behavior is active the moment the element is parsed, a script listener only after the module executes, an island's handler only after hydration. Before that moment the control is present but inert, and a click on it is discarded — a gap that widens with page weight and network conditions.
+
+A command also splits the interaction in two. The browser owns the invocation — which control acts on which element, and when — while JavaScript, where there is any, owns only what happens next. An interaction that needs nothing after the invocation — opening, closing, disclosing — leaves the script layer altogether and takes hydration with it. Interactions that genuinely need JavaScript keep it, minus the trigger wiring.
+
+The test surface changes in the same shape. Whether the control responds at all stops being something a test has to establish: the binding exists as soon as the markup is parsed, so the assertion needs no readiness condition and no retry. What remains to wait for is the handler's own work, in the smaller set of places that still have one. Flakiness around clicks was never about the click — it was about not knowing when the listener arrived.
 
 Design criterion: ask "what happens when this element breaks?" and push implementation toward layers with smaller blast radius.
 
@@ -116,6 +122,10 @@ Under this structure, even if XSS occurs:
 * API keys reside on the server and do not leak
 * UI components never received auth credentials in the first place
 
+The controls above limit what an XSS can reach. Two further controls limit whether injected code runs at all, and both sit on the same boundary as the cookie attributes — set by the server, enforced by the browser, expressed as a response header or meta element rather than application code. Content Security Policy governs what may load and execute; Trusted Types governs what may be passed to DOM sinks. One is the entrance, the other the exit, and neither contains the other. Their contents are project data — which origins are permitted, which policies may be created — so this document prescribes no directives.
+
+What is architectural is the precondition. Both are enforced page-wide, and third-party script is what erodes them. A tag manager can be admitted to a strict CSP through a nonce and `strict-dynamic`, but everything it loads thereafter inherits that trust, so the policy stops describing what may execute. Trusted Types is harder: enforcement reaches every script on the page, so a third-party script writing to a DOM sink throws unless it creates a policy of its own. Keeping external calls on the server and placing client components only where interaction requires them is what leaves both options open. Every third-party script added to the page narrows them, and that decision is frequently not an engineering one.
+
 When authentication is required, middleware checks auth on every request and redirects unauthenticated users. Public applications without auth still benefit from the baseline above.
 
 ## 4. Experience Layer
@@ -148,11 +158,15 @@ Does user interaction change the display?
 ├─ No → Server-rendered (HTML)
 └─ Yes → Can a page navigation solve it?
           ├─ Yes → Navigate via link (<a>)
-          └─ No → Does it need local state?
-                   ├─ No → <script> (DOM manipulation only: dialog.showModal(), scroll, clipboard)
-                   └─ Yes → Client component
-                             Minimize local state;
-                             extract stateless children
+          └─ No → Does a declarative invoker cover it?
+                   (command / commandfor, popovertarget,
+                    <details>, <form method="dialog">)
+                   ├─ Yes → Markup only. No script, no island
+                   └─ No → Does it need local state?
+                            ├─ No → <script> (DOM manipulation only: scroll, clipboard)
+                            └─ Yes → Client component
+                                      Minimize local state;
+                                      extract stateless children
 ```
 
 ### 5.2 Where to Place State
@@ -201,9 +215,16 @@ Deferred rendering is a crumple zone: if it fails, the fallback remains and the 
 | Cross-Platform Parity | Consistent behavior across desktop, mobile, and assistive technologies. Minor visual differences acceptable; behavioral differences are not | Behavioral divergence across browsers, or missing entirely on a major platform |
 | Composability | Works with standard CSS, HTML, and JS patterns without fighting the platform | Requires non-obvious workarounds to function. Cannot be styled. Ignores standard event models |
 | Failure Mode Transparency | Graceful degradation to a working experience. Feature detection is straightforward | Silent failure — appears to work but produces incorrect or inconsistent results |
-| Specification Stability | WHATWG Living Standard or W3C Recommendation. Baseline Widely Available | Behind flags, under active redesign, or removed from spec after initial shipping |
+| Specification Stability | On a standards track — WHATWG Living Standard or a W3C track document — with no redesign in flight | Behind flags, under active redesign, or removed from spec after initial shipping |
 
-An API must score Trustworthy on **all four axes** for direct delegation. Failure on any single axis triggers containment.
+An API must score Trustworthy on **all four axes** to be a candidate for direct delegation. Failure on any single axis triggers containment.
+
+Most APIs never need this table. The adoption rule is Baseline status, in two steps:
+
+* Newly Available — consider adoption, judged against the project's support floor. The floor is a project fact, not a property of the API: which browsers and device generations are actually served, the gap between development and release, how quickly that population updates. A project serving current desktop browsers clears the floor on day one and adopts as it stands; a project supporting device generations that no longer receive OS updates does not, and adds one fallback or waits
+* Widely Available — adopt. Reach stops being a question
+
+The four axes are for the exceptions: APIs where that rule produces the wrong answer. Drag and Drop has been Widely Available for years and must still be avoided; `<datalist>` passes feature detection and then behaves differently per engine. These are worth writing down precisely because the rule does not catch them — see `references/api-maturity.md`.
 
 Containment strategies (in order of preference):
 
