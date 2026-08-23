@@ -213,16 +213,16 @@ Deferred rendering is a crumple zone: if it fails, the fallback remains and the 
 | Cross-Platform Parity | Consistent behavior across desktop, mobile, and assistive technologies. Minor visual differences acceptable; behavioral differences are not | Behavioral divergence across browsers, or missing entirely on a major platform |
 | Composability | Works with standard CSS, HTML, and JS patterns without fighting the platform | Requires non-obvious workarounds to function. Cannot be styled. Ignores standard event models |
 | Failure Mode Transparency | Graceful degradation to a working experience. Feature detection is straightforward | Silent failure — appears to work but produces incorrect or inconsistent results |
-| Specification Stability | WHATWG Living Standard or W3C Recommendation. Shipped in every engine with no redesign pending | Behind flags, under active redesign, or removed from spec after initial shipping |
+| Specification Stability | On a standards track — WHATWG Living Standard or a W3C track document — with no redesign in flight | Behind flags, under active redesign, or removed from spec after initial shipping |
 
 An API must score Trustworthy on **all four axes** to be a candidate for direct delegation. Failure on any single axis triggers containment.
 
-The four axes describe the API. How many users have it is a separate question that belongs to the project, not to this table. Baseline status answers it in two steps:
+Most APIs never need this table. The adoption rule is Baseline status, in two steps:
 
-* Newly Available — every engine has shipped, so the specification risk is settled and what remains is reach. Compare the ship date against the project's support floor: the browsers and device generations actually served, the gap between development and release, and how quickly that population updates. A project serving one desktop engine clears the floor on day one; a project supporting device generations that no longer receive OS updates does not
-* Widely Available — 30 months after Newly Available. The reach question stops needing to be asked. This does not make adoption unconditional, and no axis expires with the date: a shipped specification can still be redesigned or withdrawn, and Drag and Drop remains on Avoid after years of Widely Available status because it fails axes 1-3
+* Newly Available — consider adoption, judged against the project's support floor. The floor is a project fact, not a property of the API: which browsers and device generations are actually served, the gap between development and release, how quickly that population updates. A project serving current desktop browsers clears the floor on day one and adopts as it stands; a project supporting device generations that no longer receive OS updates does not, and adds one fallback or waits
+* Widely Available — adopt. Reach stops being a question
 
-When the floor is not cleared, the failure-mode axis decides the response. Cosmetic degradation is adopted as-is; inert degradation takes one project-level fallback (see progressive enhancement below); degradation into incorrect behavior is avoided.
+The four axes are for the exceptions: APIs where that rule produces the wrong answer. Drag and Drop has been Widely Available for years and must still be avoided; `<datalist>` passes feature detection and then behaves differently per engine. These are worth writing down precisely because the rule does not catch them — see `references/api-maturity.md`. When the floor is not cleared, the failure-mode axis decides the response: cosmetic degradation is adopted as-is, inert degradation takes one project-level fallback (see progressive enhancement below), and degradation into incorrect behavior is avoided.
 
 Containment strategies (in order of preference):
 

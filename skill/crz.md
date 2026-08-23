@@ -23,7 +23,7 @@ When concerns conflict, choose in this order:
    * Never breaks. Use as foundation. Semantic correctness (`<button>`, not `<div onclick>`) is the precondition
    * Declarative invocation belongs here — `command` / `commandfor`, `popovertarget`, `<details>`, `<form method="dialog">`. Built-in commands are active as soon as the markup is parsed: no listener to attach, no hydration to wait for, no click lost in between
 2. CSS
-   * Breaks visually only. No functional impact. Interactions achievable with `:hover`, `:focus`, `::after`, `:target`, or `<details>`/`<summary>` belong here — not in an island
+   * Breaks visually only. No functional impact. Interactions achievable with `:hover`, `:focus`, `::after`, or `:target` belong here — not in an island
 3. Stateless island (props only)
    * Safe if inputs are correct. Guarantee inputs server-side
 4. Stateful island (local state)
@@ -153,7 +153,7 @@ const dialogId = `confirm-${item.id}`;
   <form method="dialog">
     <button value="cancel">Cancel</button>
   </form>
-  <form method="POST" action={actions.deleteItem}>
+  <form method="POST">
     <input type="hidden" name="id" value={item.id} />
     <button type="submit">Delete</button>
   </form>
@@ -164,18 +164,47 @@ Built-in commands: `show-modal`, `close`, `request-close` (fires a preventable `
 
 Rules:
 
+* Always write `type="button"` on a command button. Inside a `<form>` it is required: with the default type the browser returns from the button's activation behavior before it ever reads `commandfor`, so the command never runs and nothing is reported. Outside a form it costs nothing and keeps one rule
+* Failures are silent by design. A `commandfor` naming no element, a command value that is neither built-in nor `--`-prefixed, and a dialog command aimed at something that is not a `<dialog>` all do nothing — no error, no event. IDs are derived from props here, so a bad interpolation fails this way
+* The command event is cancelable and does not bubble. `preventDefault()` on it cancels the built-in action, which is how a single listener on the dialog guards every close path at once; `preventDefault()` on the button's `click` stops the command event from firing at all. Not bubbling means document-level delegation receives nothing — wire each target
+* Do not open a dialog from a script. `dialog.showModal()` behind a click listener is the SPA-era form: it rebuilds in JS what the button already declares, and it stays inert until that listener attaches. Write `command="show-modal"`. The script form belongs in the project-level fallback below the support floor, and the fact that such a fallback is possible is not a reason to write one by hand
 * Dialog open/close is not state. An island holding `isOpen` moves a layer-1 construct into layer 4. The island owns dialog content only when that content needs validation, dynamic fields, or multi-step flow
 * IDs are the binding. A component rendered N times needs N unique IDs — derive them from props, the same constraint as a component `<script>` running once for N instances
 * Modal overlays use `<dialog>` + `show-modal`. Non-modal ones (menus, toasts, hint panels) use `popover` + `popovertarget` or `command="toggle-popover"`. Accordions and disclosure use `<details>` / `<details name>`. Never build any of these from a `div` plus class toggling
 * `closedby="any"` (light dismiss) is not Baseline. Add it as an enhancement and always keep an explicit close control
-* Custom commands (`--` prefix) dispatch a `CommandEvent` on the target. That listener is ordinary JS, so this variant carries the same "inert until the script runs" gap as any listener — use it for behavior, not to reimplement the built-ins
+* Behavior with no built-in command is a custom command, not a click listener on the button. The name starts with `--`, and the browser dispatches a `CommandEvent` on the target
 * The support floor decides the fallback, not the calendar. `command` / `commandfor` shipped in every engine in 2025-12, so a project serving current browsers takes it as-is. Where the floor reaches older versions, add one feature-detected fallback script at the layout level (`'command' in HTMLButtonElement.prototype`) — one project-wide crumple zone, never per-component wiring, deleted when the floor clears
 
-For maturity assessments of these APIs, see references/api-maturity.md sections 8-12.
+Custom commands:
+
+```astro
+---
+const { token } = Astro.props;
+const fieldId = `token-${token.id}`;
+---
+<button type="button" command="--copy" commandfor={fieldId}>Copy</button>
+<output id={fieldId} data-token-field>{token.value}</output>
+
+<script>
+  document.querySelectorAll("[data-token-field]").forEach((field) => {
+    field.addEventListener("command", (event) => {
+      if (event.command === "--copy") {
+        navigator.clipboard.writeText(field.textContent ?? "");
+      }
+    });
+  });
+</script>
+```
+
+* The listener goes on the target, so the script belongs to the target's component — not the button's. This is the same rule as behavior living with the markup it drives
+* `event.command` distinguishes several commands on one target, replacing a set of separate click listeners. `event.source` identifies which button was pressed, so multiple triggers for one target need no extra wiring
+* The button keeps its element semantics, and the trigger-to-target binding stays in markup — no `querySelector` for the button, no ID lookup for the target
+* The listener is still ordinary JS, so this variant carries the same "inert until the script runs" gap as any listener. The gain is the binding and the wiring, not the removal of the gap
+* Never reimplement a built-in command this way
 
 ### Script Behavior
 
-`<script>` handles layer-1 behavior: DOM operations without local state. Keep each script next to the markup it drives:
+`<script>` handles layer-1 behavior that no markup declares: scroll, clipboard, focus moves, measurement. Opening and closing dialogs and popovers is not in this set — that is Declarative Invocation above. Keep each script next to the markup it drives:
 
 * One component, one concern, one `<script>`. A page script wiring two unrelated widgets is the signal to split — extract each widget's markup together with its script into a dedicated component
 * Repeated script behavior is a component-boundary detector. The same wiring appearing twice — across sections or pages — marks a component to extract, owning both the markup and the script
