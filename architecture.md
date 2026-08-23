@@ -27,7 +27,7 @@ When concerns conflict, choose in this order.
 
 Correctness and experience were once a trade-off, but browser capabilities have closed much of that gap.
 
-`ViewTransition` introduced smooth page transitions. `<form>` + `FormData` provides form handling integrated with autofill and accessibility. `sessionStorage` enables UI state persistence across pages.
+`ViewTransition` introduced smooth page transitions. `<form>` + `FormData` provides form handling integrated with autofill and accessibility. `sessionStorage` enables UI state persistence across pages. `<dialog>` and the Popover API provide modality, focus management, and top-layer stacking, and `command` / `commandfor` connect a trigger to them in markup — the interaction pattern that most often justified a stateful component now needs no script at all.
 
 Delegating to the browser rather than reproducing in a framework makes correctness and experience compatible.
 
@@ -43,6 +43,10 @@ Delegating to the browser rather than reproducing in a framework makes correctne
 The reliability of the HTML layer depends on semantic correctness. A `<button>` provides keyboard interaction, focus management, and screen reader support from the browser; a `<div onclick>` provides none of these. Using the appropriate HTML elements is the precondition for this layer to serve as a trustworthy foundation.
 
 Browser-native APIs (Geolocation, Web Speech, etc.) also belong to this layer. Browser choice is the user's responsibility, outside the application provider's scope.
+
+Declarative invocation extends how far this layer reaches. `command` / `commandfor` on a `<button>`, `popovertarget`, and `<form method="dialog">` bind a control to its target in markup, so opening a modal or a popover requires no listener. What changes is not only where the code lives but when the behavior exists: markup-declared behavior is active the moment the element is parsed, a script listener only after the module executes, an island's handler only after hydration. Before that moment the control is present but inert, and a click on it is discarded — a gap that widens with page weight and network conditions.
+
+This is also why the HTML layer produces stable tests. An interaction the browser owns needs no wait condition; an interaction a listener owns needs the test to know when that listener was attached. Test flakiness around clicks is the same gap observed from the outside.
 
 Design criterion: ask "what happens when this element breaks?" and push implementation toward layers with smaller blast radius.
 
@@ -148,11 +152,15 @@ Does user interaction change the display?
 ├─ No → Server-rendered (HTML)
 └─ Yes → Can a page navigation solve it?
           ├─ Yes → Navigate via link (<a>)
-          └─ No → Does it need local state?
-                   ├─ No → <script> (DOM manipulation only: dialog.showModal(), scroll, clipboard)
-                   └─ Yes → Client component
-                             Minimize local state;
-                             extract stateless children
+          └─ No → Does a declarative invoker cover it?
+                   (command / commandfor, popovertarget,
+                    <details>, <form method="dialog">)
+                   ├─ Yes → Markup only. No script, no island
+                   └─ No → Does it need local state?
+                            ├─ No → <script> (DOM manipulation only: scroll, clipboard)
+                            └─ Yes → Client component
+                                      Minimize local state;
+                                      extract stateless children
 ```
 
 ### 5.2 Where to Place State
@@ -201,15 +209,24 @@ Deferred rendering is a crumple zone: if it fails, the fallback remains and the 
 | Cross-Platform Parity | Consistent behavior across desktop, mobile, and assistive technologies. Minor visual differences acceptable; behavioral differences are not | Behavioral divergence across browsers, or missing entirely on a major platform |
 | Composability | Works with standard CSS, HTML, and JS patterns without fighting the platform | Requires non-obvious workarounds to function. Cannot be styled. Ignores standard event models |
 | Failure Mode Transparency | Graceful degradation to a working experience. Feature detection is straightforward | Silent failure — appears to work but produces incorrect or inconsistent results |
-| Specification Stability | WHATWG Living Standard or W3C Recommendation. Baseline Widely Available | Behind flags, under active redesign, or removed from spec after initial shipping |
+| Specification Stability | WHATWG Living Standard or W3C Recommendation. Shipped in every engine with no redesign pending | Behind flags, under active redesign, or removed from spec after initial shipping |
 
-An API must score Trustworthy on **all four axes** for direct delegation. Failure on any single axis triggers containment.
+An API must score Trustworthy on **all four axes** to be a candidate for direct delegation. Failure on any single axis triggers containment.
+
+The four axes describe the API. How many users have it is a separate question that belongs to the project, not to this table. Baseline status answers it in two steps:
+
+* Newly Available — every engine has shipped, so the specification risk is settled and what remains is reach. Compare the ship date against the project's support floor: the browsers and device generations actually served, the gap between development and release, and how quickly that population updates. A project serving one desktop engine clears the floor on day one; a project supporting device generations that no longer receive OS updates does not
+* Widely Available — 30 months after Newly Available. The reach question stops needing to be asked. This does not make adoption unconditional, and no axis expires with the date: a shipped specification can still be redesigned or withdrawn, and Drag and Drop remains on Avoid after years of Widely Available status because it fails axes 1-3
+
+When the floor is not cleared, the failure-mode axis decides the response. Cosmetic degradation is adopted as-is; inert degradation takes one project-level fallback (see progressive enhancement below); degradation into incorrect behavior is avoided.
 
 Containment strategies (in order of preference):
 
 1. **Avoid** — Use an alternative interaction pattern that does not require the API
 2. **Isolate** — Wrap in a single component with a defined contract. The component handles its own fallback. The rest of the application never touches the API directly
 3. **Delegate to a library** — Use a purpose-built library, but wrap it behind a project-owned interface. No feature code imports the library directly
+
+Declarative APIs admit a fourth containment that the three above do not describe: progressive enhancement. Where Isolate concentrates the API's use in a single component, progressive enhancement does the opposite — the API stays written in markup wherever it is needed, and what concentrates is the repair. One feature-detected fallback script, placed once at the layout level, restores the behavior for every occurrence in the project. That script is the crumple zone, and it is deleted once the support floor clears. This applies only when the degraded state is inert or cosmetic. An API that degrades to incorrect behavior is not a progressive-enhancement candidate.
 
 Three failure patterns determine the appropriate response and revisit timeline:
 

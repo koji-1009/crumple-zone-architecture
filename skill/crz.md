@@ -21,6 +21,7 @@ When concerns conflict, choose in this order:
 
 1. HTML / Browser APIs
    * Never breaks. Use as foundation. Semantic correctness (`<button>`, not `<div onclick>`) is the precondition
+   * Declarative invocation belongs here — `command` / `commandfor`, `popovertarget`, `<details>`, `<form method="dialog">`. Built-in commands are active as soon as the markup is parsed: no listener to attach, no hydration to wait for, no click lost in between
 2. CSS
    * Breaks visually only. No functional impact. Interactions achievable with `:hover`, `:focus`, `::after`, `:target`, or `<details>`/`<summary>` belong here — not in an island
 3. Stateless island (props only)
@@ -82,7 +83,7 @@ Use Astro (.astro) by default:
 Use islands only when local state is required:
 
 * Forms with validation or dynamic fields
-* Dialogs with internal state (validation, dynamic fields, multi-step)
+* Dialogs with internal state (validation, dynamic fields, multi-step) — the island owns the content, never the open/close
 * Real-time calculations (price, filtering)
 * Browser-native APIs (Geolocation, Web Speech)
 
@@ -113,15 +114,19 @@ Fallback design: if the Server Island fails, the fallback remains silently — n
 
 Decision test:
 
-1. Does it need DOM manipulation without state (dialog.showModal(), scroll-to-top, clipboard copy)?
+1. Can markup alone do it (open or close a dialog or popover, disclosure, submit)?
+   * Yes → `command` / `commandfor`, `popovertarget`, `<details>`, `<form method="dialog">`. Layer 1. No script, no island
+2. Does it need DOM manipulation without state (scroll-to-top, clipboard copy)?
    * Yes → `<script>` tag. Layer 1 (Browser API). No island needed
-2. Does it declare local state? (useState / ref() / $state)
+3. Does it declare local state? (useState / ref() / $state)
    * No → Astro component
    * Yes → Island. Group values that change together (e.g., form fields) into a single state object. Keep independently changing values as separate declarations. If the island's state serves more than one user interaction, split each interaction into its own island
 
 Island verification — before writing an island, confirm each hook is necessary:
 
 * useState holding server data → pass as props from frontmatter. No island needed
+* useState for dialog/popover open state → `<dialog>` or `[popover]` driven by `command` / `commandfor`. No island needed
+* useState for which accordion panel is open → `<details name="group">`. No island needed
 * useState for tooltip/hover display → HTML `title` attribute or CSS `:hover`. No island needed
 * useState for scroll/carousel position → CSS `overflow-x: auto`. No island needed
 * useState for filter/sort selection → URL query params + server-side filtering. No island needed
@@ -132,6 +137,41 @@ Island verification — before writing an island, confirm each hook is necessary
 If all state values are replaceable, the island is unnecessary — rewrite as `.astro` component or `<script>`.
 
 For the fuller decision model including navigation-first evaluation, see architecture.md section 5.1.
+
+### Declarative Invocation
+
+Before reaching for `<script>` or an island, check whether markup already carries the behavior. `command` / `commandfor` binds a `<button>` to a target element by ID, and the browser handles activation, focus, top layer, and Esc.
+
+```astro
+---
+const dialogId = `confirm-${item.id}`;
+---
+<button type="button" command="show-modal" commandfor={dialogId}>Delete</button>
+
+<dialog id={dialogId}>
+  <p>Delete {item.name}?</p>
+  <form method="dialog">
+    <button value="cancel">Cancel</button>
+  </form>
+  <form method="POST" action={actions.deleteItem}>
+    <input type="hidden" name="id" value={item.id} />
+    <button type="submit">Delete</button>
+  </form>
+</dialog>
+```
+
+Built-in commands: `show-modal`, `close`, `request-close` (fires a preventable `cancel` first), `show-popover`, `hide-popover`, `toggle-popover`. `value` on a closing button sets the dialog's `returnValue`.
+
+Rules:
+
+* Dialog open/close is not state. An island holding `isOpen` moves a layer-1 construct into layer 4. The island owns dialog content only when that content needs validation, dynamic fields, or multi-step flow
+* IDs are the binding. A component rendered N times needs N unique IDs — derive them from props, the same constraint as a component `<script>` running once for N instances
+* Modal overlays use `<dialog>` + `show-modal`. Non-modal ones (menus, toasts, hint panels) use `popover` + `popovertarget` or `command="toggle-popover"`. Accordions and disclosure use `<details>` / `<details name>`. Never build any of these from a `div` plus class toggling
+* `closedby="any"` (light dismiss) is not Baseline. Add it as an enhancement and always keep an explicit close control
+* Custom commands (`--` prefix) dispatch a `CommandEvent` on the target. That listener is ordinary JS, so this variant carries the same "inert until the script runs" gap as any listener — use it for behavior, not to reimplement the built-ins
+* The support floor decides the fallback, not the calendar. `command` / `commandfor` shipped in every engine in 2025-12, so a project serving current browsers takes it as-is. Where the floor reaches older versions, add one feature-detected fallback script at the layout level (`'command' in HTMLButtonElement.prototype`) — one project-wide crumple zone, never per-component wiring, deleted when the floor clears
+
+For maturity assessments of these APIs, see references/api-maturity.md sections 8-12.
 
 ### Script Behavior
 
@@ -369,6 +409,8 @@ Test effort follows the reliability layers:
    * Storybook for human visual/interaction review. Whether feedback is appropriate is a human judgment
    * Automated tests (Playwright, component tests) raise confidence but do not determine correctness — they verify mechanics (button disables, error shows), not UX quality
 
+The implementation layer determines test stability. A control the browser drives (`command` / `commandfor`, `<form>`, `<a>`) is active as soon as the markup is parsed, so an E2E click on it needs no wait condition. A control a listener drives is inert until its script executes — an island's until hydration completes — so the test must wait for evidence that the listener exists, or it is flaky. A click that needs a retry or an arbitrary wait is a finding about the implementation layer, not about the test.
+
 Test directory mirrors source structure:
 
 ```
@@ -400,6 +442,6 @@ After applying CRZ principles, review every change against these checks before f
 5. **Component decomposition check**
    * Pages hold frontmatter, layout, semantic skeleton, and composition — data display lives in components; a page-level `<script>` only for section-spanning behavior. Every nameable section is extracted; inline HTML remains for the skeleton and nameless glue. The same markup on 2+ pages → promote to `shared/components/` (design-component context). Repeated script wiring marks a missed component boundary. An `.astro` file over ~100 lines needs a boundary search. No pass-through components that only forward props.
 6. **Island necessity check**
-   * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, or `<script>` DOM call? If yes for all values, the island should be an `.astro` component.
+   * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, declarative invoker (`command` / `commandfor`, `popovertarget`, `<details>`), or `<script>` DOM call? If yes for all values, the island should be an `.astro` component. An `isOpen` boolean is always answered by the invoker.
 7. **Document consistency check**
    * Does the change add, remove, or rename a feature, route, or component? If yes, verify that CLAUDE.md, PROJECT.md, and any other project documentation reflect the current state. Deleted features must be removed from documentation.
