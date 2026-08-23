@@ -208,9 +208,7 @@ const fieldId = `token-${token.id}`;
 
 * The listener goes on the target, so the script belongs to the target's component — not the button's. This is the same rule as behavior living with the markup it drives
 * `event.command` distinguishes several commands on one target, replacing a set of separate click listeners. `event.source` identifies which button was pressed, so multiple triggers for one target need no extra wiring
-* The button keeps its element semantics, and the trigger-to-target binding stays in markup — no `querySelector` for the button, no ID lookup for the target
 * The listener is still ordinary JS, so this variant carries the same "inert until the script runs" gap as any listener. The gain is the binding and the wiring, not the removal of the gap
-* Never reimplement a built-in command this way
 
 ### Script Behavior
 

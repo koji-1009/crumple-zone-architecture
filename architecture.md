@@ -46,7 +46,9 @@ Browser-native APIs (Geolocation, Web Speech, etc.) also belong to this layer. B
 
 Declarative invocation extends how far this layer reaches. `command` / `commandfor` on a `<button>` and `popovertarget` bind a control to its target in markup, and `<form method="dialog">` closes the dialog that contains it, so opening and closing a modal or a popover requires no listener. What changes is not only where the code lives but when the behavior exists: markup-declared behavior is active the moment the element is parsed, a script listener only after the module executes, an island's handler only after hydration. Before that moment the control is present but inert, and a click on it is discarded — a gap that widens with page weight and network conditions.
 
-This is also why the HTML layer produces stable tests. An interaction the browser owns needs no wait condition; an interaction a listener owns needs the test to know when that listener was attached. Test flakiness around clicks is the same gap observed from the outside.
+A command also splits the interaction in two. The browser owns the invocation — which control acts on which element, and when — while JavaScript, where there is any, owns only what happens next. An interaction that needs nothing after the invocation — opening, closing, disclosing — leaves the script layer altogether and takes hydration with it. Interactions that genuinely need JavaScript keep it, minus the trigger wiring.
+
+The test surface changes in the same shape. Whether the control responds at all stops being something a test has to establish: the binding exists as soon as the markup is parsed, so the assertion needs no readiness condition and no retry. What remains to wait for is the handler's own work, in the smaller set of places that still have one. Flakiness around clicks was never about the click — it was about not knowing when the listener arrived.
 
 Design criterion: ask "what happens when this element breaks?" and push implementation toward layers with smaller blast radius.
 
@@ -222,15 +224,13 @@ Most APIs never need this table. The adoption rule is Baseline status, in two st
 * Newly Available — consider adoption, judged against the project's support floor. The floor is a project fact, not a property of the API: which browsers and device generations are actually served, the gap between development and release, how quickly that population updates. A project serving current desktop browsers clears the floor on day one and adopts as it stands; a project supporting device generations that no longer receive OS updates does not, and adds one fallback or waits
 * Widely Available — adopt. Reach stops being a question
 
-The four axes are for the exceptions: APIs where that rule produces the wrong answer. Drag and Drop has been Widely Available for years and must still be avoided; `<datalist>` passes feature detection and then behaves differently per engine. These are worth writing down precisely because the rule does not catch them — see `references/api-maturity.md`. When the floor is not cleared, the failure-mode axis decides the response: cosmetic degradation is adopted as-is, inert degradation takes one project-level fallback (see progressive enhancement below), and degradation into incorrect behavior is avoided.
+The four axes are for the exceptions: APIs where that rule produces the wrong answer. Drag and Drop has been Widely Available for years and must still be avoided; `<datalist>` passes feature detection and then behaves differently per engine. These are worth writing down precisely because the rule does not catch them — see `references/api-maturity.md`.
 
 Containment strategies (in order of preference):
 
 1. **Avoid** — Use an alternative interaction pattern that does not require the API
 2. **Isolate** — Wrap in a single component with a defined contract. The component handles its own fallback. The rest of the application never touches the API directly
 3. **Delegate to a library** — Use a purpose-built library, but wrap it behind a project-owned interface. No feature code imports the library directly
-
-Declarative APIs admit a fourth containment that the three above do not describe: progressive enhancement. Where Isolate concentrates the API's use in a single component, progressive enhancement does the opposite — the API stays written in markup wherever it is needed, and what concentrates is the repair. One feature-detected fallback script, placed once at the layout level, restores the behavior for every occurrence in the project. That script is the crumple zone, and it is deleted once the support floor clears. This applies only when the degraded state is inert or cosmetic. An API that degrades to incorrect behavior is not a progressive-enhancement candidate.
 
 Three failure patterns determine the appropriate response and revisit timeline:
 
