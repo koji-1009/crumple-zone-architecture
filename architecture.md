@@ -120,6 +120,10 @@ Under this structure, even if XSS occurs:
 * API keys reside on the server and do not leak
 * UI components never received auth credentials in the first place
 
+The controls above limit what an XSS can reach. Two further controls limit whether injected code runs at all, and both sit on the same boundary as the cookie attributes — set by the server, enforced by the browser, expressed as a response header or meta element rather than application code. Content Security Policy governs what may load and execute; Trusted Types governs what may be passed to DOM sinks. One is the entrance, the other the exit, and neither contains the other. Their contents are project data — which origins are permitted, which policies may be created — so this document prescribes no directives.
+
+What is architectural is the precondition. Both are enforced page-wide, and third-party script is what erodes them. A tag manager can be admitted to a strict CSP through a nonce and `strict-dynamic`, but everything it loads thereafter inherits that trust, so the policy stops describing what may execute. Trusted Types is harder: enforcement reaches every script on the page, so a third-party script writing to a DOM sink throws unless it creates a policy of its own. Keeping external calls on the server and placing client components only where interaction requires them is what leaves both options open. Every third-party script added to the page narrows them, and that decision is frequently not an engineering one.
+
 When authentication is required, middleware checks auth on every request and redirects unauthenticated users. Public applications without auth still benefit from the baseline above.
 
 ## 4. Experience Layer
