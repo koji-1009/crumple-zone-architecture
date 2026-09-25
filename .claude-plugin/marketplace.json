@@ -1,7 +1,7 @@
 {
   "name": "crumple-zone-architecture",
   "owner": {
-    "name": "Koji Wakamiya"
+    "name": "koji-1009"
   },
   "description": "Crumple Zone Architecture skills for Astro: crz for implementation, sieve for styling.",
   "plugins": [
