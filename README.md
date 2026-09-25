@@ -20,9 +20,9 @@ Japanese: [ja/](ja/)
 
 ## Documents
 
-[**skill/crz.md**](skill/plugins/crz/skills/crz/SKILL.md) — Astro implementation skill. Self-contained. Pass to an AI agent during development.
+[**skill/crz.md**](skill/crz/skills/crz/SKILL.md) — Astro implementation skill. Self-contained. Pass to an AI agent during development.
 
-[**skill/sieve.md**](skill/plugins/sieve/skills/sieve/SKILL.md) — CSS implementation skill. Companion to crz.md. Pass alongside crz.md when the task involves styling.
+[**skill/sieve.md**](skill/sieve/skills/sieve/SKILL.md) — CSS implementation skill. Companion to crz.md. Pass alongside crz.md when the task involves styling.
 
 [**architecture.md**](architecture.md) — Design principles behind the skill's rules. Add as context when reviewing AI-generated code or resolving edge cases.
 
@@ -75,13 +75,13 @@ Otherwise, copy the skill file to your AI agent's configuration:
 ### Claude Code (project)
 
 ```bash
-mkdir -p .claude/skills/crz && curl -o .claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
+mkdir -p .claude/skills/crz && curl -o .claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
 ```
 
 ### Claude Code (global)
 
 ```bash
-mkdir -p ~/.claude/skills/crz && curl -o ~/.claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
+mkdir -p ~/.claude/skills/crz && curl -o ~/.claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
 ```
 
 Migrating from the previous slash-command install: remove the old file, or it keeps serving outdated guidance under the same `/crz` name:
@@ -93,19 +93,19 @@ rm -f .claude/commands/crz.md ~/.claude/commands/crz.md
 ### Cursor
 
 ```bash
-mkdir -p .cursor/rules && curl -o .cursor/rules/crz.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
+mkdir -p .cursor/rules && curl -o .cursor/rules/crz.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
 ```
 
 ### Codex (project)
 
 ```bash
-mkdir -p .agents/skills/crz && curl -o .agents/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
+mkdir -p .agents/skills/crz && curl -o .agents/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
 ```
 
 ### Codex (global)
 
 ```bash
-mkdir -p ~/.agents/skills/crz && curl -o ~/.agents/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
+mkdir -p ~/.agents/skills/crz && curl -o ~/.agents/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
 ```
 
 ### Sieve (CSS companion)
@@ -115,13 +115,13 @@ Add alongside crz.md when the task involves styling:
 #### Claude Code (project)
 
 ```bash
-mkdir -p .claude/skills/sieve && curl -o .claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
+mkdir -p .claude/skills/sieve && curl -o .claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
 ```
 
 #### Claude Code (global)
 
 ```bash
-mkdir -p ~/.claude/skills/sieve && curl -o ~/.claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
+mkdir -p ~/.claude/skills/sieve && curl -o ~/.claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
 ```
 
 Migrating from the previous slash-command install:
@@ -133,22 +133,22 @@ rm -f .claude/commands/sieve.md ~/.claude/commands/sieve.md
 #### Cursor
 
 ```bash
-curl -o .cursor/rules/sieve.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
+curl -o .cursor/rules/sieve.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
 ```
 
 #### Codex (project)
 
 ```bash
-mkdir -p .agents/skills/sieve && curl -o .agents/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
+mkdir -p .agents/skills/sieve && curl -o .agents/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
 ```
 
 #### Codex (global)
 
 ```bash
-mkdir -p ~/.agents/skills/sieve && curl -o ~/.agents/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
+mkdir -p ~/.agents/skills/sieve && curl -o ~/.agents/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
 ```
 
-For Claude Code and Codex, the skills load automatically when the task matches their frontmatter description — crz for Astro implementation, sieve for styling. In Claude Code, `/crz` and `/sieve` (`/crz:crz` and `/sieve:sieve` when installed as plugins) invoke them explicitly, which remains the deterministic path. Forgetting to invoke a command is a silent failure; automatic loading turns it into recovery. Each skill has one file, `skill/plugins/<name>/skills/<name>/SKILL.md`, packaged as a plugin that Claude Code and Codex both read; `skill/crz.md` and `skill/sieve.md` are symlinks to it, and Cursor copies the same file.
+For Claude Code and Codex, the skills load automatically when the task matches their frontmatter description — crz for Astro implementation, sieve for styling. In Claude Code, `/crz` and `/sieve` (`/crz:crz` and `/sieve:sieve` when installed as plugins) invoke them explicitly, which remains the deterministic path. Forgetting to invoke a command is a silent failure; automatic loading turns it into recovery. Each skill has one file, `skill/<name>/skills/<name>/SKILL.md`, packaged as a plugin that Claude Code and Codex both read; `skill/crz.md` and `skill/sieve.md` are symlinks to it, and Cursor copies the same file.
 
 ## License
 

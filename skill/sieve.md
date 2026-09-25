@@ -1,1 +1,1 @@
-plugins/sieve/skills/sieve/SKILL.md
+sieve/skills/sieve/SKILL.md

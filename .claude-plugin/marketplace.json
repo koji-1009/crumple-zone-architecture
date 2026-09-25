@@ -7,12 +7,12 @@
   "plugins": [
     {
       "name": "crz",
-      "source": "./skill/plugins/crz",
+      "source": "./skill/crz",
       "description": "Implement Astro applications with Crumple Zone Architecture — trust the browser, design for failure modes, minimize client state."
     },
     {
       "name": "sieve",
-      "source": "./skill/plugins/sieve",
+      "source": "./skill/sieve",
       "description": "Choose the CSS implementation for Astro projects — styling method, design tokens, and CSS-layer independence from JavaScript. Companion to crz."
     }
   ]

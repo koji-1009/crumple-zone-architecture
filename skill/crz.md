@@ -1,1 +1,1 @@
-plugins/crz/skills/crz/SKILL.md
+crz/skills/crz/SKILL.md
