@@ -58,18 +58,30 @@ Migrating from a copied skill file: remove the copies so only the plugin serves 
 rm -rf .claude/skills/crz .claude/skills/sieve ~/.claude/skills/crz ~/.claude/skills/sieve
 ```
 
+### Codex (plugin)
+
+Codex reads the same marketplace. Add it, then install crz and, for styling tasks, sieve:
+
+```bash
+codex plugin marketplace add koji-1009/crumple-zone-architecture
+codex plugin add crz@crumple-zone-architecture
+codex plugin add sieve@crumple-zone-architecture
+```
+
+Migrating from the previous AGENTS.md install: remove the crz.md content from AGENTS.md, or it keeps serving outdated guidance on every task.
+
 Otherwise, copy the skill file to your AI agent's configuration:
 
 ### Claude Code (project)
 
 ```bash
-mkdir -p .claude/skills/crz && curl -o .claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/claude/crz/SKILL.md
+mkdir -p .claude/skills/crz && curl -o .claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
 ```
 
 ### Claude Code (global)
 
 ```bash
-mkdir -p ~/.claude/skills/crz && curl -o ~/.claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/claude/crz/SKILL.md
+mkdir -p ~/.claude/skills/crz && curl -o ~/.claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
 ```
 
 Migrating from the previous slash-command install: remove the old file, or it keeps serving outdated guidance under the same `/crz` name:
@@ -84,10 +96,16 @@ rm -f .claude/commands/crz.md ~/.claude/commands/crz.md
 mkdir -p .cursor/rules && curl -o .cursor/rules/crz.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
-### Codex
+### Codex (project)
 
 ```bash
-curl -o AGENTS.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
+mkdir -p .agents/skills/crz && curl -o .agents/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
+```
+
+### Codex (global)
+
+```bash
+mkdir -p ~/.agents/skills/crz && curl -o ~/.agents/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/crz/skills/crz/SKILL.md
 ```
 
 ### Sieve (CSS companion)
@@ -97,13 +115,13 @@ Add alongside crz.md when the task involves styling:
 #### Claude Code (project)
 
 ```bash
-mkdir -p .claude/skills/sieve && curl -o .claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/claude/sieve/SKILL.md
+mkdir -p .claude/skills/sieve && curl -o .claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
 ```
 
 #### Claude Code (global)
 
 ```bash
-mkdir -p ~/.claude/skills/sieve && curl -o ~/.claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/claude/sieve/SKILL.md
+mkdir -p ~/.claude/skills/sieve && curl -o ~/.claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
 ```
 
 Migrating from the previous slash-command install:
@@ -118,7 +136,19 @@ rm -f .claude/commands/sieve.md ~/.claude/commands/sieve.md
 curl -o .cursor/rules/sieve.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve.md
 ```
 
-For Claude Code, the skills load automatically when the task matches their frontmatter description — crz for Astro implementation, sieve for styling. `/crz` and `/sieve` (`/crz:crz` and `/sieve:sieve` when installed as plugins) invoke them explicitly, which remains the deterministic path. Forgetting to invoke a command is a silent failure; automatic loading turns it into recovery. The `skill/claude/` files are copies of `skill/crz.md` and `skill/sieve.md` with Claude Code frontmatter; Cursor and Codex use the plain files directly.
+#### Codex (project)
+
+```bash
+mkdir -p .agents/skills/sieve && curl -o .agents/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
+```
+
+#### Codex (global)
+
+```bash
+mkdir -p ~/.agents/skills/sieve && curl -o ~/.agents/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/plugins/sieve/skills/sieve/SKILL.md
+```
+
+For Claude Code and Codex, the skills load automatically when the task matches their frontmatter description — crz for Astro implementation, sieve for styling. In Claude Code, `/crz` and `/sieve` (`/crz:crz` and `/sieve:sieve` when installed as plugins) invoke them explicitly, which remains the deterministic path. Forgetting to invoke a command is a silent failure; automatic loading turns it into recovery. The `skill/plugins/` files are copies of `skill/crz.md` and `skill/sieve.md` with skill frontmatter, packaged as plugins that Claude Code and Codex both read; Cursor uses the plain files directly.
 
 ## License
 
