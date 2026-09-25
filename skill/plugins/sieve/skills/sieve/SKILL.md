@@ -3,8 +3,6 @@ name: sieve
 description: Choose the CSS implementation for Astro projects — styling method (CSS Modules or Tailwind), design tokens, and CSS-layer independence from JavaScript. Use for styling tasks in Astro projects, alongside the crz skill.
 ---
 
-<!-- Copy of skill/sieve.md with skill frontmatter for Claude Code and Codex. Edit skill/sieve.md first, then mirror changes here. -->
-
 # Sieve — Design Implementation Strategy for Astro
 
 Filter design requirements into the right CSS implementation. Styling lives in the CSS layer — independent of JavaScript runtime.

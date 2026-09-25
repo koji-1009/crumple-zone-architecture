@@ -3,8 +3,6 @@ name: crz
 description: Implement Astro applications with Crumple Zone Architecture — trust the browser, design for failure modes, minimize client state. Use when writing or modifying Astro code (pages, components, islands, Actions, middleware, state placement, project structure).
 ---
 
-<!-- Copy of skill/crz.md with skill frontmatter for Claude Code and Codex. Edit skill/crz.md first, then mirror changes here. -->
-
 # Astro Crumple Zone Implementation
 
 Build healthy Astro applications with Crumple Zone Architecture. Trust the browser, design for failure modes, minimize framework dependency.
