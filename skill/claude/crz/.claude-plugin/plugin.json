@@ -1,0 +1,9 @@
+{
+  "name": "crz",
+  "description": "Implement Astro applications with Crumple Zone Architecture — trust the browser, design for failure modes, minimize client state.",
+  "author": {
+    "name": "koji-1009"
+  },
+  "repository": "https://github.com/koji-1009/crumple-zone-architecture",
+  "license": "MIT"
+}

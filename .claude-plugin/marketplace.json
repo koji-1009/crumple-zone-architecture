@@ -1,0 +1,19 @@
+{
+  "name": "crumple-zone-architecture",
+  "owner": {
+    "name": "koji-1009"
+  },
+  "description": "Crumple Zone Architecture skills for Astro: crz for implementation, sieve for styling.",
+  "plugins": [
+    {
+      "name": "crz",
+      "source": "./skill/claude/crz",
+      "description": "Implement Astro applications with Crumple Zone Architecture — trust the browser, design for failure modes, minimize client state."
+    },
+    {
+      "name": "sieve",
+      "source": "./skill/claude/sieve",
+      "description": "Choose the CSS implementation for Astro projects — styling method, design tokens, and CSS-layer independence from JavaScript. Companion to crz."
+    }
+  ]
+}

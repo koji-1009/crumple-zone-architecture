@@ -30,7 +30,33 @@
 
 ## セットアップ
 
-スキルファイルをAIエージェントの設定にコピーする:
+### Claude Code（プラグイン）
+
+このリポジトリは Claude Code のプラグインマーケットプレイスである。追加したうえで crz と、スタイリングを扱う場合は sieve をインストールする:
+
+```bash
+claude plugin marketplace add koji-1009/crumple-zone-architecture
+claude plugin install crz@crumple-zone-architecture
+claude plugin install sieve@crumple-zone-architecture
+```
+
+既定ではユーザースコープにインストールされる。`--scope project` または `--scope local` で変更できる。スキルは `/crz:crz` と `/sieve:sieve` で呼び出す。
+
+サードパーティのマーケットプレイスは自動更新が既定で無効である。`/plugin` → Marketplaces で有効にするか、手動で更新する:
+
+```bash
+claude plugin marketplace update crumple-zone-architecture
+claude plugin update crz@crumple-zone-architecture
+claude plugin update sieve@crumple-zone-architecture
+```
+
+スキルファイルをコピーしていた場合は、プラグインだけがガイダンスを提供するようコピーを削除する:
+
+```bash
+rm -rf .claude/skills/crz .claude/skills/sieve ~/.claude/skills/crz ~/.claude/skills/sieve
+```
+
+プラグインを使わない場合は、スキルファイルをAIエージェントの設定にコピーする:
 
 ### Claude Code（プロジェクト）
 
@@ -62,7 +88,7 @@ mkdir -p .cursor/rules && curl -o .cursor/rules/crz.md https://raw.githubusercon
 curl -o AGENTS.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz.md
 ```
 
-Claude Code では、タスクが frontmatter の description に合致すると自動でロードされる。`/crz` による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、自動ロードがそれを回復に変える。`skill/claude/` 配下は `skill/crz.md` / `skill/sieve.md` に Claude Code 用 frontmatter を付けたコピーであり、Cursor と Codex は素のファイルをそのまま使う。
+Claude Code では、タスクが frontmatter の description に合致すると自動でロードされる。`/crz`（プラグインとしてインストールした場合は `/crz:crz`）による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、自動ロードがそれを回復に変える。`skill/claude/` 配下は `skill/crz.md` / `skill/sieve.md` に Claude Code 用 frontmatter を付けたコピーであり、Cursor と Codex は素のファイルをそのまま使う。
 
 ## License
 

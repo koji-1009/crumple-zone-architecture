@@ -1,0 +1,9 @@
+{
+  "name": "sieve",
+  "description": "Choose the CSS implementation for Astro projects — styling method, design tokens, and CSS-layer independence from JavaScript. Companion to crz.",
+  "author": {
+    "name": "koji-1009"
+  },
+  "repository": "https://github.com/koji-1009/crumple-zone-architecture",
+  "license": "MIT"
+}
