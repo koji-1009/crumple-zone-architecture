@@ -32,7 +32,33 @@ Japanese: [ja/](ja/)
 
 ## Setup
 
-Copy the skill file to your AI agent's configuration:
+### Claude Code (plugin)
+
+This repository is a Claude Code plugin marketplace. Add it, then install crz and, for styling tasks, sieve:
+
+```bash
+claude plugin marketplace add koji-1009/crumple-zone-architecture
+claude plugin install crz@crumple-zone-architecture
+claude plugin install sieve@crumple-zone-architecture
+```
+
+Plugins install at user scope by default; pass `--scope project` or `--scope local` to change it. The skills are invoked as `/crz:crz` and `/sieve:sieve`.
+
+Auto-update is off by default for third-party marketplaces. Enable it under `/plugin` → Marketplaces, or update manually:
+
+```bash
+claude plugin marketplace update crumple-zone-architecture
+claude plugin update crz@crumple-zone-architecture
+claude plugin update sieve@crumple-zone-architecture
+```
+
+Migrating from a copied skill file: remove the copies so only the plugin serves the guidance:
+
+```bash
+rm -rf .claude/skills/crz .claude/skills/sieve ~/.claude/skills/crz ~/.claude/skills/sieve
+```
+
+Otherwise, copy the skill file to your AI agent's configuration:
 
 ### Claude Code (project)
 
@@ -92,7 +118,7 @@ rm -f .claude/commands/sieve.md ~/.claude/commands/sieve.md
 curl -o .cursor/rules/sieve.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve.md
 ```
 
-For Claude Code, the skills load automatically when the task matches their frontmatter description — crz for Astro implementation, sieve for styling. `/crz` and `/sieve` invoke them explicitly, which remains the deterministic path. Forgetting to invoke a command is a silent failure; automatic loading turns it into recovery. The `skill/claude/` files are copies of `skill/crz.md` and `skill/sieve.md` with Claude Code frontmatter; Cursor and Codex use the plain files directly.
+For Claude Code, the skills load automatically when the task matches their frontmatter description — crz for Astro implementation, sieve for styling. `/crz` and `/sieve` (`/crz:crz` and `/sieve:sieve` when installed as plugins) invoke them explicitly, which remains the deterministic path. Forgetting to invoke a command is a silent failure; automatic loading turns it into recovery. The `skill/claude/` files are copies of `skill/crz.md` and `skill/sieve.md` with Claude Code frontmatter; Cursor and Codex use the plain files directly.
 
 ## License
 
