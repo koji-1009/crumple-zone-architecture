@@ -267,6 +267,7 @@ Never use:
 * Global state libraries (Redux, Zustand, Jotai, Pinia, Vuex, Svelte stores)
 * Cross-island state sharing (Context, provide/inject)
 * localStorage for auth/session
+* `history.pushState()` / `history.replaceState()` in islands — the URL is a canonical source. To update query params (filters, pagination), use `<a>` or `window.location.assign()` with the new query string
 
 ## Mutation Pattern
 
@@ -395,9 +396,6 @@ Advanced routing (`src/fetch.ts`):
 ## Navigation
 
 Do not add `<ClientRouter />` — it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes.
-
-* Every navigation is a full page load. Use `DOMContentLoaded`, and write idempotent `<script>` initialization — scripts run on every page load
-* Never call `history.pushState()` or `history.replaceState()` in islands — the URL is a canonical source. To update query params (filters, pagination), use `<a>` or `window.location.assign()` with the new query string
 
 ## Project Structure
 
