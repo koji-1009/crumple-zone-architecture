@@ -392,24 +392,12 @@ Advanced routing (`src/fetch.ts`):
 * Do not create this file by default. Use it only for cross-cutting infrastructure that middleware cannot express (structured logging around pipeline phases, tracing, Hono interop), and always delegate to `astro()`
 * Auth and authorization stay in middleware. Do not move them into `fetch.ts` — one visible security boundary, not two
 
-## ViewTransition
+## Navigation
 
-Crumple zone — if transitions break or are unsupported, navigation still works.
+Do not add `<ClientRouter />` — it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes.
 
-Use browser-native cross-document view transitions. Do not add `<ClientRouter />` — it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes.
-
-```css
-/* global stylesheet */
-@view-transition {
-  navigation: auto;
-}
-```
-
-* The default crossfade applies to the entire page — no per-component directives needed
-* Unsupported browsers (currently Firefox) fall back to standard MPA navigation — experience degradation, not functional failure
-* Every navigation is a full page load. Use `DOMContentLoaded` (or `pagereveal` for transition timing), and write idempotent `<script>` initialization — scripts run on every page load
+* Every navigation is a full page load. Use `DOMContentLoaded`, and write idempotent `<script>` initialization — scripts run on every page load
 * Never call `history.pushState()` or `history.replaceState()` in islands — the URL is a canonical source. To update query params (filters, pagination), use `<a>` or `window.location.assign()` with the new query string
-* Customize with standard CSS only: `view-transition-name`, `::view-transition-old()` / `::view-transition-new()`
 
 ## Project Structure
 

@@ -27,7 +27,7 @@ When concerns conflict, choose in this order.
 
 Correctness and experience were once a trade-off, but browser capabilities have closed much of that gap.
 
-`ViewTransition` introduced smooth page transitions. `<form>` + `FormData` provides form handling integrated with autofill and accessibility. `sessionStorage` enables UI state persistence across pages. `<dialog>` and the Popover API provide modality, focus management, and top-layer stacking, and `command` / `commandfor` connect a trigger to them in markup — the interaction pattern that most often justified a stateful component now needs no script at all.
+`<form>` + `FormData` provides form handling integrated with autofill and accessibility. `sessionStorage` enables UI state persistence across pages. `<dialog>` and the Popover API provide modality, focus management, and top-layer stacking, and `command` / `commandfor` connect a trigger to them in markup — the interaction pattern that most often justified a stateful component now needs no script at all.
 
 Delegating to the browser rather than reproducing in a framework makes correctness and experience compatible.
 
@@ -130,13 +130,9 @@ When authentication is required, middleware checks auth on every request and red
 
 ## 4. Experience Layer
 
-Page transitions and interaction feedback are designed as crumple zones. If they break, functionality continues; the impact is contained to experience degradation.
+Interaction feedback is designed as a crumple zone. If it breaks, functionality continues; the impact is contained to experience degradation.
 
-`ViewTransition` — browser-native cross-document view transitions animate MPA page switches:
-
-* Declare the `@view-transition` CSS at-rule in a global stylesheet. The default crossfade applies to the entire page — no JavaScript, no framework involvement
-* `<ClientRouter />` is not used: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes. See `references/clientrouter-exit.md` for the departure policy
-* In unsupported browsers, falls back to standard MPA navigation — experience degradation, not functional failure
+`<ClientRouter />` is not used: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes. See `references/clientrouter-exit.md` for the departure policy.
 
 Interaction feedback — if it breaks, the operation still completes:
 
