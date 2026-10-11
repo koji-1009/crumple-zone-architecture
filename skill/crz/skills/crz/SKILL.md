@@ -217,6 +217,7 @@ const fieldId = `token-${token.id}`;
 * Cross-cutting behavior that reads fields across sections is the parent's concern. Keep it at the parent — a page-level `<script>` is the legitimate home for section-spanning behavior. Pushing it into a child forces the child to query ancestor DOM
 * The goal is locality of source, not DOM sandboxing. Astro `<script>` is module-scoped, and document-wide `querySelector` is acceptable. Do not add wrapper elements or `data-scope` attributes just to narrow queries
 * A component's `<script>` runs once per page even when the component renders N times. Wire with `querySelectorAll` or `data-*` lookups and per-element listeners — never assume a single instance
+* Pass server values to a script through `data-*` attributes on the element it drives and read them from its `dataset` — the value stays declared in markup, each instance carries its own, and the script stays bundled
 * The moment a behavior needs local state, it becomes an island (see decision test) — split the markup, not the script
 
 For the reasoning behind granularity and behavior locality, see architecture.md section 5.5.
