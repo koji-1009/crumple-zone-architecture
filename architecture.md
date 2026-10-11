@@ -130,11 +130,7 @@ When authentication is required, middleware checks auth on every request and red
 
 ## 4. Experience Layer
 
-Interaction feedback is designed as a crumple zone. If it breaks, functionality continues; the impact is contained to experience degradation.
-
-`<ClientRouter />` is not used: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes. See `references/clientrouter-exit.md` for the departure policy.
-
-Interaction feedback — if it breaks, the operation still completes:
+Interaction feedback is designed as a crumple zone. If it breaks, the operation still completes; the impact is contained to experience degradation:
 
 | Moment           | Feedback                            | If it breaks                                     |
 | ---------------- | ----------------------------------- | ------------------------------------------------ |
@@ -238,8 +234,6 @@ Three failure patterns determine the appropriate response and revisit timeline:
 
 The third pattern is the most insidious: the API passes feature detection, appears to work, and behaves differently per browser — all within spec.
 
-For individual API assessments and the ClientRouter departure policy, see `references/`.
-
 ### 5.5 Component Granularity and Behavior Locality
 
 The cost of component decomposition depends on who edits the code. For a human reader, fine-grained components add navigation and indirection cost — the classic argument against premature extraction. For an AI agent, a component is a write-unit: a small component is a small edit target that needs little context, and what an edit can unintentionally change is bounded by the component's contract. Blast radius applies to the development process, not only to runtime. The two are distinct: extraction bounds edits, while runtime containment still comes from the partial-failure pattern — an uncaught error in any component's frontmatter fails the whole SSR render regardless of file boundaries.
@@ -254,3 +248,4 @@ Behavior belongs with the markup it drives. When a page-level `<script>` accumul
 2. Design for failure modes. Begin with fault containment, not feature addition
 3. The server is the authority on state. The client is a display layer; a reload is the reconstruction mechanism from canonical sources
 4. Make security boundaries visible. Use explicit API routes, not implicit RPCs
+5. Leave navigation to the browser. `<ClientRouter />` is not used: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes
