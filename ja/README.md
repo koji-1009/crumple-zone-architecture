@@ -66,8 +66,6 @@ codex plugin add crz@crumple-zone-architecture
 codex plugin add sieve@crumple-zone-architecture
 ```
 
-以前の AGENTS.md 形式からの移行では、AGENTS.md から crz.md の内容を削除する。残っていると全タスクで古い内容が使われ続ける。
-
 プラグインを使わない場合は、スキルファイルをAIエージェントの設定にコピーする:
 
 ### Claude Code（プロジェクト）
@@ -82,18 +80,6 @@ mkdir -p .claude/skills/crz && curl -o .claude/skills/crz/SKILL.md https://raw.g
 mkdir -p ~/.claude/skills/crz && curl -o ~/.claude/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
 ```
 
-以前の slash command 形式からの移行では、古いファイルを削除する。残っていると同じ `/crz` 名で古い内容が使われ続ける:
-
-```bash
-rm -f .claude/commands/crz.md ~/.claude/commands/crz.md
-```
-
-### Cursor
-
-```bash
-mkdir -p .cursor/rules && curl -o .cursor/rules/crz.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
-```
-
 ### Codex（プロジェクト）
 
 ```bash
@@ -106,7 +92,7 @@ mkdir -p .agents/skills/crz && curl -o .agents/skills/crz/SKILL.md https://raw.g
 mkdir -p ~/.agents/skills/crz && curl -o ~/.agents/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
 ```
 
-Claude Code と Codex では、タスクが frontmatter の description に合致すると自動でロードされる。Claude Code では `/crz`（プラグインとしてインストールした場合は `/crz:crz`）による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、自動ロードがそれを回復に変える。スキルの実体は `skill/<name>/skills/<name>/SKILL.md` の1ファイルのみで、Claude Code と Codex が共通で読むプラグインとして配置している。`skill/crz.md` / `skill/sieve.md` はそこへのシンボリックリンクであり、Cursor も同じファイルをコピーして使う。
+Claude Code と Codex では、タスクが frontmatter の description に合致すると自動でロードされる。Claude Code では `/crz`（プラグインとしてインストールした場合は `/crz:crz`）による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、自動ロードがそれを回復に変える。スキルの実体は `skill/<name>/skills/<name>/SKILL.md` の1ファイルのみで、Claude Code と Codex が共通で読むプラグインとして配置している。`skill/crz.md` / `skill/sieve.md` はそこへのシンボリックリンクである。
 
 ## License
 
