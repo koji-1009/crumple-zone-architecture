@@ -52,12 +52,6 @@ claude plugin update crz@crumple-zone-architecture
 claude plugin update sieve@crumple-zone-architecture
 ```
 
-Migrating from a copied skill file: remove the copies so only the plugin serves the guidance:
-
-```bash
-rm -rf .claude/skills/crz .claude/skills/sieve ~/.claude/skills/crz ~/.claude/skills/sieve
-```
-
 ### Codex (plugin)
 
 Codex reads the same marketplace. Add it, then install crz and, for styling tasks, sieve:
