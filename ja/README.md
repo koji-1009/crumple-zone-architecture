@@ -28,6 +28,8 @@
 
 [extensions.md](extensions.md) — MPA + Islands を超えるパターン: リアルタイム更新、キャッシュ層、楽観的な更新、セキュリティ上の考慮事項。
 
+[references/api-maturity.md](references/api-maturity.md) — Baseline による採用規則が誤った答えを出すブラウザAPIと、その代替。architecture.md 5.4 から参照される。
+
 [operations.md](operations.md) — AI駆動開発におけるCRZの展開方法: ドキュメントの役割、2エージェント分離、スキルプロンプトの作成。
 
 ## セットアップ

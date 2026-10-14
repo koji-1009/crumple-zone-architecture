@@ -4,21 +4,21 @@ How to deploy CRZ in AI-driven development workflows.
 
 ## Document Roles
 
-| Document                        | Reader               | When                          |
-| ------------------------------- | -------------------- | ----------------------------- |
-| skill/crz.md                    | Implementation agent | During coding                 |
-| skill/sieve.md                  | Implementation agent | During coding (styling tasks) |
-| architecture.md + extensions.md | Review agent         | During code review            |
-| Diff                            | Human operator       | Final gate                    |
+| Document                                                    | Reader               | When                          |
+| ----------------------------------------------------------- | -------------------- | ----------------------------- |
+| skill/crz.md                                                | Implementation agent | During coding                 |
+| skill/sieve.md                                              | Implementation agent | During coding (styling tasks) |
+| architecture.md + extensions.md + references/api-maturity.md | Review agent         | During code review            |
+| Diff                                                        | Human operator       | Final gate                    |
 
-The skill prompt gives the agent implementation rules. The architecture and extensions documents give the reviewer the reasoning behind those rules.
+The skill prompt gives the agent implementation rules. The architecture and extensions documents give the reviewer the reasoning behind those rules, and references/api-maturity.md lists the browser APIs where the Baseline adoption rule of architecture.md section 5.4 gives the wrong answer, and what to use instead.
 
 ## Two-Agent Separation
 
 Implementation and review should be separate agents. A single agent writing and reviewing its own code is subject to confirmation bias — it justifies layers it created. Separation ensures the reviewer evaluates structure from principles, not from implementation momentum.
 
 * Implementation agent reads skill/crz.md (and skill/sieve.md for styling tasks) and writes code
-* Review agent reads architecture.md and extensions.md, then evaluates the diff
+* Review agent reads architecture.md, extensions.md, and references/api-maturity.md, then evaluates the diff
 * Human operator reviews the final diff as the last gate
 
 ## Execution Environment

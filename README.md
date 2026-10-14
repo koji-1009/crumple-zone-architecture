@@ -28,6 +28,8 @@ Japanese: [ja/](ja/)
 
 [extensions.md](extensions.md) — Patterns beyond MPA + Islands: real-time updates, cache layers, optimistic updates, and their security considerations.
 
+[references/api-maturity.md](references/api-maturity.md) — Browser APIs where the Baseline adoption rule gives the wrong answer, and what to use instead. Referenced from architecture.md section 5.4.
+
 [operations.md](operations.md) — How to deploy CRZ in AI-driven development: document roles, two-agent separation, and skill prompt authoring.
 
 ## Setup
