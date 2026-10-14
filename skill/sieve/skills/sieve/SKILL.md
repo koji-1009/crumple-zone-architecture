@@ -26,10 +26,10 @@ If JS breaks, styling must survive. This is the only rule.
 
 ## Prohibited
 
-* **CSS-in-JS** (styled-components, Emotion, etc.) — JS runtime failure removes all styles. Styling must not depend on JS execution
-* **Astro scoped `<style>`** — only applies to `.astro` templates. Styles do not penetrate into islands (React, Vue, Svelte). Projects with islands cannot use scoped styles as their sole styling method, and mixing with another method violates the single-method rule. Use CSS Modules or Tailwind instead
-* **`@apply`** — extracts utility classes back into CSS, a round trip that solves nothing. In Tailwind v4, `@theme` values are CSS Custom Properties; use `var()` directly in custom CSS, or extract repeated patterns into Astro components. `@apply` is an unnecessary indirection layer that creates shared style definitions — changing one definition affects all referencing components
-* **Mixing methods** — use one styling method per project. CSS Modules and Tailwind in the same project creates ambiguity for both humans and AI agents. Choose one and commit
+* CSS-in-JS (styled-components, Emotion, etc.) — JS runtime failure removes all styles. Styling must not depend on JS execution
+* Astro scoped `<style>` — only applies to `.astro` templates. Styles do not penetrate into islands (React, Vue, Svelte). Projects with islands cannot use scoped styles as their sole styling method, and mixing with another method violates the single-method rule. Use CSS Modules or Tailwind instead
+* `@apply` — extracts utility classes back into CSS, a round trip that solves nothing. In Tailwind v4, `@theme` values are CSS Custom Properties; use `var()` directly in custom CSS, or extract repeated patterns into Astro components. `@apply` is an unnecessary indirection layer that creates shared style definitions — changing one definition affects all referencing components
+* Mixing methods — use one styling method per project. CSS Modules and Tailwind in the same project creates ambiguity for both humans and AI agents. Choose one and commit
 
 ## Design Tokens
 

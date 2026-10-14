@@ -148,7 +148,7 @@ Update the UI immediately while the server processes the mutation. On reload, se
 
 Two error-handling strategies depending on the consequence of failure:
 
-**Fire-and-forget** — for operations where failure has no meaningful consequence (likes, emoji reactions). Uses the reactive sessionStorage mechanism from 2.3 — write to sessionStorage and notify via CustomEvent, then send the Action in the background. Any discrepancy resolves on reload.
+Fire-and-forget — for operations where failure has no meaningful consequence (likes, emoji reactions). Uses the reactive sessionStorage mechanism from 2.3 — write to sessionStorage and notify via CustomEvent, then send the Action in the background. Any discrepancy resolves on reload.
 
 ```
 Click
@@ -159,7 +159,7 @@ Reload
   → server data overwrites as canonical source
 ```
 
-**Revert on error** — for operations where the user expects persistence (wishlist, cart, bookmark, follow). Update local state optimistically and revert if the server returns an error.
+Revert on error — for operations where the user expects persistence (wishlist, cart, bookmark, follow). Update local state optimistically and revert if the server returns an error.
 
 ```
 Click
