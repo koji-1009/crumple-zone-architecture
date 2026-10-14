@@ -54,12 +54,6 @@ claude plugin update crz@crumple-zone-architecture
 claude plugin update sieve@crumple-zone-architecture
 ```
 
-スキルファイルをコピーしていた場合は、プラグインだけがガイダンスを提供するようコピーを削除する:
-
-```bash
-rm -rf .claude/skills/crz .claude/skills/sieve ~/.claude/skills/crz ~/.claude/skills/sieve
-```
-
 ### Codex（プラグイン）
 
 Codex も同じマーケットプレイスを読む。追加したうえで crz と、スタイリングを扱う場合は sieve をインストールする:
