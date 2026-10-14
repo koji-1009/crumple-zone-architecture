@@ -141,6 +141,8 @@ Interaction feedback is designed as a crumple zone. If it breaks, the operation 
 
 Feedback has a dual structure — client for experience, server for correctness. If the client side breaks, the server side guarantees functional integrity.
 
+A message that has to survive a navigation — "Saved." shown once on the page the user lands on after saving — travels in a one-shot cookie. The server side of the mutation sets it with the outcome; the next page request consumes it, and the server renders the message into the page. Both ends are on the server, so the message needs no client state and no island, and the cookie is HttpOnly like every other. If the cookie is lost, only the message is missing: the outcome was decided before the navigation.
+
 ## 5. Decision Flows
 
 ### 5.1 Choosing the Implementation Layer
