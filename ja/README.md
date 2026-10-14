@@ -22,6 +22,8 @@
 
 [**skill/crz.md**](../skill/crz/skills/crz/SKILL.md) — Astro 実装スキル。自己完結。開発時にAIエージェントに渡す。
 
+[**skill/sieve.md**](../skill/sieve/skills/sieve/SKILL.md) — CSS 実装スキル。crz.md のコンパニオン。スタイリングを扱うタスクでは crz.md と併せて渡す。
+
 [**architecture.md**](architecture.md) — スキルのルールの背景にある設計原則。AIが生成したコードのレビューや、判断に迷うケースで追加コンテキストとして使う。
 
 [**extensions.md**](extensions.md) — MPA + Islands を超えるパターン: リアルタイム更新、キャッシュ層、楽観的な更新、セキュリティ上の考慮事項。
@@ -92,7 +94,35 @@ mkdir -p .agents/skills/crz && curl -o .agents/skills/crz/SKILL.md https://raw.g
 mkdir -p ~/.agents/skills/crz && curl -o ~/.agents/skills/crz/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/crz/skills/crz/SKILL.md
 ```
 
-Claude Code と Codex では、タスクが frontmatter の description に合致すると自動でロードされる。Claude Code では `/crz`（プラグインとしてインストールした場合は `/crz:crz`）による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、自動ロードがそれを回復に変える。スキルの実体は `skill/<name>/skills/<name>/SKILL.md` の1ファイルのみで、Claude Code と Codex が共通で読むプラグインとして配置している。`skill/crz.md` / `skill/sieve.md` はそこへのシンボリックリンクである。
+### Sieve（CSS コンパニオン）
+
+スタイリングを扱う場合は crz.md と併せて追加する:
+
+#### Claude Code（プロジェクト）
+
+```bash
+mkdir -p .claude/skills/sieve && curl -o .claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
+```
+
+#### Claude Code（グローバル）
+
+```bash
+mkdir -p ~/.claude/skills/sieve && curl -o ~/.claude/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
+```
+
+#### Codex（プロジェクト）
+
+```bash
+mkdir -p .agents/skills/sieve && curl -o .agents/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
+```
+
+#### Codex（グローバル）
+
+```bash
+mkdir -p ~/.agents/skills/sieve && curl -o ~/.agents/skills/sieve/SKILL.md https://raw.githubusercontent.com/koji-1009/crumple-zone-architecture/main/skill/sieve/skills/sieve/SKILL.md
+```
+
+Claude Code と Codex では、タスクが frontmatter の description に合致すると自動でロードされる — crz は Astro 実装、sieve はスタイリングで。Claude Code では `/crz` と `/sieve`（プラグインとしてインストールした場合は `/crz:crz` と `/sieve:sieve`）による明示的な呼び出しも引き続き使える — こちらが決定論的な経路である。コマンドの打ち忘れはサイレント故障だが、自動ロードがそれを回復に変える。スキルの実体は `skill/<name>/skills/<name>/SKILL.md` の1ファイルのみで、Claude Code と Codex が共通で読むプラグインとして配置している。`skill/crz.md` / `skill/sieve.md` はそこへのシンボリックリンクである。
 
 ## License
 
