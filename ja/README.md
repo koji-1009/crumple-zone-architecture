@@ -20,15 +20,17 @@
 
 ## ドキュメント
 
-[**skill/crz.md**](../skill/crz/skills/crz/SKILL.md) — Astro 実装スキル。自己完結。開発時にAIエージェントに渡す。
+[skill/crz.md](../skill/crz/skills/crz/SKILL.md) — Astro 実装スキル。自己完結。開発時にAIエージェントに渡す。
 
-[**skill/sieve.md**](../skill/sieve/skills/sieve/SKILL.md) — CSS 実装スキル。crz.md のコンパニオン。スタイリングを扱うタスクでは crz.md と併せて渡す。
+[skill/sieve.md](../skill/sieve/skills/sieve/SKILL.md) — CSS 実装スキル。crz.md のコンパニオン。スタイリングを扱うタスクでは crz.md と併せて渡す。
 
-[**architecture.md**](architecture.md) — スキルのルールの背景にある設計原則。AIが生成したコードのレビューや、判断に迷うケースで追加コンテキストとして使う。
+[architecture.md](architecture.md) — スキルのルールの背景にある設計原則。AIが生成したコードのレビューや、判断に迷うケースで追加コンテキストとして使う。
 
-[**extensions.md**](extensions.md) — MPA + Islands を超えるパターン: リアルタイム更新、キャッシュ層、楽観的な更新、セキュリティ上の考慮事項。
+[extensions.md](extensions.md) — MPA + Islands を超えるパターン: リアルタイム更新、キャッシュ層、楽観的な更新、セキュリティ上の考慮事項。
 
-[**operations.md**](operations.md) — AI駆動開発におけるCRZの展開方法: ドキュメントの役割、2エージェント分離、スキルプロンプトの作成。
+[references/api-maturity.md](references/api-maturity.md) — Baseline による採用規則が誤った答えを出すブラウザAPIと、その代替。architecture.md 5.4 から参照される。
+
+[operations.md](operations.md) — AI駆動開発におけるCRZの展開方法: ドキュメントの役割、2エージェント分離、スキルプロンプトの作成。
 
 ## セットアップ
 

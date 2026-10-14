@@ -147,7 +147,7 @@ const locations = await getLocations(); // サーバーで取得
 
 失敗の重大度に応じて2つのエラーハンドリング戦略がある:
 
-**Fire-and-forget** — 失敗しても問題が生じない操作向け（いいね、絵文字リアクション）。2.3 のリアクティブ sessionStorage（sessionStorage + CustomEvent）を利用し、Action をバックグラウンドで送信する。ズレはリロードで解消される。
+Fire-and-forget — 失敗しても問題が生じない操作向け（いいね、絵文字リアクション）。2.3 のリアクティブ sessionStorage（sessionStorage + CustomEvent）を利用し、Action をバックグラウンドで送信する。ズレはリロードで解消される。
 
 ```
 クリック
@@ -158,7 +158,7 @@ const locations = await getLocations(); // サーバーで取得
   → サーバーデータが正規ソースとして上書き
 ```
 
-**Revert on error** — ユーザーが永続化を期待する操作向け（ウィッシュリスト、カート、ブックマーク、フォロー）。ローカル状態を楽観的に更新し、サーバーがエラーを返したら元に戻す。
+Revert on error — ユーザーが永続化を期待する操作向け（ウィッシュリスト、カート、ブックマーク、フォロー）。ローカル状態を楽観的に更新し、サーバーがエラーを返したら元に戻す。
 
 ```
 クリック

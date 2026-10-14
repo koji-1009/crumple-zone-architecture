@@ -209,7 +209,7 @@ Deferred rendering is a crumple zone: if it fails, the fallback remains and the 
 | Failure Mode Transparency | Graceful degradation to a working experience. Feature detection is straightforward | Silent failure — appears to work but produces incorrect or inconsistent results |
 | Specification Stability | On a standards track — WHATWG Living Standard or a W3C track document — with no redesign in flight | Behind flags, under active redesign, or removed from spec after initial shipping |
 
-An API must score Trustworthy on **all four axes** to be a candidate for direct delegation. Failure on any single axis triggers containment.
+An API must score Trustworthy on all four axes to be a candidate for direct delegation. Failure on any single axis triggers containment.
 
 Most APIs never need this table. The adoption rule is Baseline status, in two steps:
 
@@ -220,9 +220,9 @@ The four axes are for the exceptions: APIs where that rule produces the wrong an
 
 Containment strategies (in order of preference):
 
-1. **Avoid** — Use an alternative interaction pattern that does not require the API
-2. **Isolate** — Wrap in a single component with a defined contract. The component handles its own fallback. The rest of the application never touches the API directly
-3. **Delegate to a library** — Use a purpose-built library, but wrap it behind a project-owned interface. No feature code imports the library directly
+1. Avoid — Use an alternative interaction pattern that does not require the API
+2. Isolate — Wrap in a single component with a defined contract. The component handles its own fallback. The rest of the application never touches the API directly
+3. Delegate to a library — Use a purpose-built library, but wrap it behind a project-owned interface. No feature code imports the library directly
 
 Three failure patterns determine the appropriate response and revisit timeline:
 

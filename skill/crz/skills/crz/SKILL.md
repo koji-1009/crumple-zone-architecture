@@ -453,17 +453,17 @@ The server is the source of correctness. Test the server thoroughly; verify isla
 
 After applying CRZ principles, review every change against these checks before finalizing:
 
-1. **Blast radius check**
+1. Blast radius check
    * For each new layer or pattern introduced, answer: "What happens if this breaks?" If the answer is "nothing, because the layer below already handles it," the layer is redundant.
-2. **Canonical source honesty**
+2. Canonical source honesty
    * Is the declared canonical source genuinely authoritative, or is it a derived cache being treated as one? A sessionStorage copy of server data is a cache, not a canonical source. Name the actual authority and acknowledge stopgaps as stopgaps.
-3. **Dead code check**
+3. Dead code check
    * Are all exported functions called? Unused initializers, sync functions, or cache hydration calls indicate an over-designed layer.
-4. **Simplicity check**
+4. Simplicity check
    * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (SSR props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
-5. **Component decomposition check**
+5. Component decomposition check
    * Pages hold frontmatter, layout, semantic skeleton, and composition — data display lives in components; a page-level `<script>` only for section-spanning behavior. Every nameable section is extracted; inline HTML remains for the skeleton and nameless glue. The same markup on 2+ pages → promote to `shared/components/` (design-component context). Repeated script wiring marks a missed component boundary. An `.astro` file over ~100 lines needs a boundary search. No pass-through components that only forward props.
-6. **Island necessity check**
+6. Island necessity check
    * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, declarative invoker (`command` / `commandfor`, `popovertarget`, `<details>`), or `<script>` DOM call? If yes for all values, the island should be an `.astro` component. An `isOpen` boolean is answered by the invoker wherever a button opens the dialog, which is the usual case.
-7. **Document consistency check**
+7. Document consistency check
    * Does the change add, remove, or rename a feature, route, or component? If yes, verify that CLAUDE.md, PROJECT.md, and any other project documentation reflect the current state. Deleted features must be removed from documentation.

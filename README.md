@@ -20,15 +20,17 @@ Japanese: [ja/](ja/)
 
 ## Documents
 
-[**skill/crz.md**](skill/crz/skills/crz/SKILL.md) — Astro implementation skill. Self-contained. Pass to an AI agent during development.
+[skill/crz.md](skill/crz/skills/crz/SKILL.md) — Astro implementation skill. Self-contained. Pass to an AI agent during development.
 
-[**skill/sieve.md**](skill/sieve/skills/sieve/SKILL.md) — CSS implementation skill. Companion to crz.md. Pass alongside crz.md when the task involves styling.
+[skill/sieve.md](skill/sieve/skills/sieve/SKILL.md) — CSS implementation skill. Companion to crz.md. Pass alongside crz.md when the task involves styling.
 
-[**architecture.md**](architecture.md) — Design principles behind the skill's rules. Add as context when reviewing AI-generated code or resolving edge cases.
+[architecture.md](architecture.md) — Design principles behind the skill's rules. Add as context when reviewing AI-generated code or resolving edge cases.
 
-[**extensions.md**](extensions.md) — Patterns beyond MPA + Islands: real-time updates, cache layers, optimistic updates, and their security considerations.
+[extensions.md](extensions.md) — Patterns beyond MPA + Islands: real-time updates, cache layers, optimistic updates, and their security considerations.
 
-[**operations.md**](operations.md) — How to deploy CRZ in AI-driven development: document roles, two-agent separation, and skill prompt authoring.
+[references/api-maturity.md](references/api-maturity.md) — Browser APIs where the Baseline adoption rule gives the wrong answer, and what to use instead. Referenced from architecture.md section 5.4.
+
+[operations.md](operations.md) — How to deploy CRZ in AI-driven development: document roles, two-agent separation, and skill prompt authoring.
 
 ## Setup
 

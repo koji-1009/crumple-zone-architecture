@@ -25,7 +25,7 @@ Last reviewed: 2026-08
 
 ## 1. HTML Drag and Drop API
 
-**Failure pattern**: Structural design flaw
+Failure pattern: Structural design flaw
 
 ### Maturity Assessment
 
@@ -38,17 +38,17 @@ Last reviewed: 2026-08
 
 ### CRZ Strategy: Avoid (preferred) or Isolate
 
-- **Sortable lists in admin panels**: Provide explicit reorder controls (move up/down buttons, position number input). More accessible, works everywhere
-- **Kanban-style boards**: If drag-and-drop is a hard requirement, isolate behind a single island component using `@dnd-kit` (Pointer Events internally). The island exposes `onCardMove(cardId, fromColumn, toColumn, position)` — no DnD API leaks beyond this boundary
-- **File upload drop zones**: The one legitimate use case. `drop` event with `dataTransfer.files` works reliably on desktop. Wrap in an island that provides `<input type="file">` as the primary interaction, with drop zone as progressive enhancement
+- Sortable lists in admin panels: Provide explicit reorder controls (move up/down buttons, position number input). More accessible, works everywhere
+- Kanban-style boards: If drag-and-drop is a hard requirement, isolate behind a single island component using `@dnd-kit` (Pointer Events internally). The island exposes `onCardMove(cardId, fromColumn, toColumn, position)` — no DnD API leaks beyond this boundary
+- File upload drop zones: The one legitimate use case. `drop` event with `dataTransfer.files` works reliably on desktop. Wrap in an island that provides `<input type="file">` as the primary interaction, with drop zone as progressive enhancement
 
-**Revisit condition**: A future spec revision rebuilding DnD on Pointer Events with mobile-first semantics.
+Revisit condition: A future spec revision rebuilding DnD on Pointer Events with mobile-first semantics.
 
 ---
 
 ## 2. `<select>` Styling (`appearance: base-select`)
 
-**Failure pattern**: Implementation lag
+Failure pattern: Implementation lag
 
 ### Maturity Assessment
 
@@ -65,13 +65,13 @@ Last reviewed: 2026-08
 - Do NOT use JavaScript-based select replacements (Select2, React Select, Headless UI Listbox) in new CRZ projects
 - If rich content in options is a hard requirement and cross-browser consistency is mandatory today: a single `<RichSelect>` island that feature-detects support and falls back to native `<select>`
 
-**Revisit condition**: every engine ships it enabled.
+Revisit condition: every engine ships it enabled.
 
 ---
 
 ## 3. Date/Time Input Types
 
-**Failure pattern**: Implementation lag (partial)
+Failure pattern: Implementation lag (partial)
 
 ### Maturity Assessment
 
@@ -84,18 +84,18 @@ Last reviewed: 2026-08
 
 ### CRZ Strategy: Use with constraints, Isolate when UX requirements exceed native capability
 
-- **Basic date entry** (birthdate, start date, deadline): Use native `<input type="date">` directly. UX inconsistencies are cosmetic, not behavioral
-- **Advanced requirements** (date range, timezone-aware, custom calendar): Isolate behind a dedicated island. Consider Temporal API as it reaches Baseline
-- **Never** build a custom date picker from scratch. Accessibility, keyboard, and locale handling is enormous. Use a library wrapped behind a project-owned interface
+- Basic date entry (birthdate, start date, deadline): Use native `<input type="date">` directly. UX inconsistencies are cosmetic, not behavioral
+- Advanced requirements (date range, timezone-aware, custom calendar): Isolate behind a dedicated island. Consider Temporal API as it reaches Baseline
+- Never build a custom date picker from scratch. Accessibility, keyboard, and locale handling is enormous. Use a library wrapped behind a project-owned interface
 - For Safari empty-value display: CSS workaround or document as known cosmetic issue. Do not switch to `type="text"`
 
-**Revisit condition**: `appearance: base-select`-style customization extends to date inputs. Temporal API reaches every engine.
+Revisit condition: `appearance: base-select`-style customization extends to date inputs. Temporal API reaches every engine.
 
 ---
 
 ## 4. File System Access API
 
-**Failure pattern**: Implementation lag (severe — single vendor)
+Failure pattern: Implementation lag (severe — single vendor)
 
 ### Maturity Assessment
 
@@ -113,13 +113,13 @@ Last reviewed: 2026-08
 - File export: Blob URL + download attribute
 - Bulk operations: server-side via BFF
 
-**Revisit condition**: Second engine implementation and formal standards track.
+Revisit condition: Second engine implementation and formal standards track.
 
 ---
 
 ## 5. `<datalist>` Element
 
-**Failure pattern**: Underspecification
+Failure pattern: Underspecification
 
 ### Maturity Assessment
 
@@ -132,18 +132,18 @@ Last reviewed: 2026-08
 
 ### CRZ Strategy: Avoid for anything beyond trivial suggestions; Isolate for combobox patterns
 
-- **Simple, short suggestion lists** (5-15 static options, no API backing, no label/value distinction): acceptable as progressive enhancement
-- **API-backed autocomplete**: Do not use `<datalist>`. Browser's opaque re-filtering of already-filtered results makes behavior unpredictable. Build a combobox island using ARIA pattern or Downshift
-- **Label/value distinction** (display "Tokyo, Japan" but submit "TYO"): Do not use `<datalist>`. Cross-browser rendering inconsistency
+- Simple, short suggestion lists (5-15 static options, no API backing, no label/value distinction): acceptable as progressive enhancement
+- API-backed autocomplete: Do not use `<datalist>`. Browser's opaque re-filtering of already-filtered results makes behavior unpredictable. Build a combobox island using ARIA pattern or Downshift
+- Label/value distinction (display "Tokyo, Japan" but submit "TYO"): Do not use `<datalist>`. Cross-browser rendering inconsistency
 - `<datalist>` occupies a dangerous middle ground — it looks like it should work for combobox use cases, but its underspecified behavior means you cannot predict what the user sees
 
-**Revisit condition**: WHATWG spec amended to define filtering behavior, label rendering, and styling hooks. Also if `appearance: base-select`-style customization extends to datalist.
+Revisit condition: WHATWG spec amended to define filtering behavior, label rendering, and styling hooks. Also if `appearance: base-select`-style customization extends to datalist.
 
 ---
 
 ## 6. `<input type="month">` (and `type="week"`)
 
-**Failure pattern**: Implementation lag
+Failure pattern: Implementation lag
 
 ### Maturity Assessment
 
@@ -156,12 +156,12 @@ Last reviewed: 2026-08
 
 ### CRZ Strategy: Avoid — decompose into trustworthy primitives
 
-- **Option A**: Two native `<select>` elements (year + month). Universal, accessible, zero JS
-- **Option B**: `<input type="date">` with guidance that only month matters. Value truncated server-side
-- **Option C** (if rich UI required): Island with custom month picker exposing `onMonthSelect(year, month)`
+- Option A: Two native `<select>` elements (year + month). Universal, accessible, zero JS
+- Option B: `<input type="date">` with guidance that only month matters. Value truncated server-side
+- Option C (if rich UI required): Island with custom month picker exposing `onMonthSelect(year, month)`
 - Same analysis applies to `<input type="week">`
 
-**Revisit condition**: Firefox and Safari ship native month/week picker widgets.
+Revisit condition: Firefox and Safari ship native month/week picker widgets.
 
 ---
 
