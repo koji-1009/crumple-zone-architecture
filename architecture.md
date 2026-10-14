@@ -105,7 +105,7 @@ Baseline for all applications:
 Browser (untrusted)
   Application code holds no auth credentials
   Does not call external service APIs
-  Can only call the server's API routes
+  Can only call the server's declared entry points
 ──── HTTPS + HttpOnly + SameSite Cookie ────
 Server (trust boundary / BFF)
   Cookie → session or preferences
@@ -247,5 +247,5 @@ Behavior belongs with the markup it drives. When a page-level `<script>` accumul
 1. Trust the browser — calibrated to maturity (5.4). Contain immature APIs behind crumple zones; fix defects upstream to thin the zone. The scope of MPA continues to expand as browsers gain native capabilities
 2. Design for failure modes. Begin with fault containment, not feature addition
 3. The server is the authority on state. The client is a display layer; a reload is the reconstruction mechanism from canonical sources
-4. Make security boundaries visible. Use explicit API routes, not implicit RPCs
+4. Make security boundaries visible. Every server entry point the client reaches — a page, a form POST, an Action, an API route — is declared in code and validates its own input. An RPC is acceptable when it is declared this way; what is ruled out is a call path hidden by the framework
 5. Leave navigation to the browser. `<ClientRouter />` is not used: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes

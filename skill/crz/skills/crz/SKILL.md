@@ -351,8 +351,8 @@ Required for all applications:
 
 * HTTPS in production
 * All cookies: `HttpOnly` + `SameSite=Lax` + `Secure`
-* External API calls only in `.astro` frontmatter or API routes
-* Validate all API route inputs with Zod
+* External API calls only on the server — `.astro` frontmatter, Action handlers, or API routes, through `features/*/data/`
+* Validate all Action and API route inputs with Zod
 
 When authentication is required:
 
@@ -408,7 +408,7 @@ src/
   features/
     {feature}/
       types.ts
-      data/                 — data I/O, server-only (backend boundary: swap internals without changing callers). API fetch, file processing, DB queries, storage writes. Only frontmatter and Action handlers call into data/. Islands must not import from this directory
+      data/                 — data I/O, server-only (backend boundary: swap internals without changing callers). API fetch, file processing, DB queries, storage writes. Only frontmatter, Action handlers, and API routes call into data/. Islands must not import from this directory
       components/           — .astro (display) + island wrappers (Action integration)
         react/              — pure React views (no Astro imports, no framework integration)
   shared/
