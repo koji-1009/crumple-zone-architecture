@@ -178,7 +178,7 @@ Rules:
 * Openings that no user action triggers are the exception — an Action failing, a session about to expire, a server-sent event. There is no button to declare, so the island that owns that outcome calls `showModal()`. This stays an exception because the trigger is a program event, not an interaction
 * Dialog open/close is not state. An island holding `isOpen` moves a layer-1 construct into layer 4. The island owns dialog content only when that content needs validation, dynamic fields, or multi-step flow
 * IDs are the binding. A component rendered N times needs N unique IDs — derive them from props, the same constraint as a component `<script>` running once for N instances
-* Modal overlays use `<dialog>` + `show-modal`. Non-modal ones (menus, toasts, hint panels) use `popover` + `popovertarget` or `command="toggle-popover"`. Accordions and disclosure use `<details>` / `<details name>`. Never build any of these from a `div` plus class toggling
+* Modal overlays use `<dialog>` + `show-modal`. Non-modal ones (menus, user-triggered toasts, hint panels) use `popover` + `popovertarget` or `command="toggle-popover"`. Accordions and disclosure use `<details>` / `<details name>`. Never build any of these from a `div` plus class toggling
 * `closedby="any"` (light dismiss) is not Baseline. Add it as an enhancement and always keep an explicit close control
 * Behavior with no built-in command is a custom command, not a click listener on the button. The name starts with `--`, and the browser dispatches a `CommandEvent` on the target
 * The support floor decides the fallback, not the calendar. `command` / `commandfor` shipped in every engine in 2025-12, so a project serving current browsers takes it as-is. Where the floor reaches older versions, add one feature-detected fallback script at the layout level (`'command' in HTMLButtonElement.prototype`) — one project-wide crumple zone, never per-component wiring, deleted when the floor clears
@@ -304,20 +304,22 @@ PRG pattern (layer 1):
 
 ```astro
 ---
+// pages/items/[id].astro
+import { setFlash } from "../../flash";
+const { id } = Astro.params;
 if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-  const result = await analyze(formData);
-  await Astro.session.set("result", result);
-  return Astro.redirect(Astro.url.pathname);
+  await deleteItem(id, Astro.locals.user); // data/ checks existence and ownership
+  setFlash(Astro.cookies, "item-deleted");
+  return Astro.redirect("/items");
 }
-const result = await Astro.session.get("result");
+const item = await getItem(id);
 ---
 <form method="POST">
-  <input name="query" />
-  <button>Analyze</button>
+  <button>Delete</button>
 </form>
-{result && <ResultView data={result} />}
 ```
+
+The form has no fields: the target is in the URL, and the session cookie identifies the user. Anything the POST does read from the body is validated before use, like any other entry point.
 
 Action definition:
 
@@ -330,9 +332,139 @@ Client feedback (crumple zone):
 2. Success → reconstruct from canonical sources:
    * `window.location.reload()` — redisplay the same page
    * `window.location.assign(url)` — move to another page
+   * To confirm the outcome on the page the user lands on, use a post-navigation message (below)
 3. Failure → re-enable button, show error
 
 If feedback breaks, the action still completes or fails correctly on the server.
+
+Post-navigation messages (toast, snackbar):
+
+The typical case: the user saves, lands on the saved item's page, and sees "Saved." once. The server side of the mutation writes a message key into a one-shot cookie, the navigation carries it, middleware reads it on the next page request and deletes it once a page has rendered, and the layout renders the message. One module owns the keys and the cookie:
+
+```typescript
+// src/flash.ts
+import type { AstroCookies } from "astro";
+
+const FLASH_MESSAGES = {
+  "item-saved": "Saved.",
+  "item-deleted": "Deleted.",
+} as const;
+
+export type FlashKey = keyof typeof FLASH_MESSAGES;
+
+// __Host-: the browser accepts the cookie only with Secure, Path=/ and no Domain
+const COOKIE = "__Host-flash";
+const SCOPE = { path: "/", secure: true } as const;
+
+export function setFlash(cookies: AstroCookies, key: FlashKey) {
+  cookies.set(COOKIE, key, { ...SCOPE, httpOnly: true, sameSite: "lax", maxAge: 60 });
+}
+
+export function readFlash(cookies: AstroCookies) {
+  return cookies.get(COOKIE)?.value;
+}
+
+export function clearFlash(cookies: AstroCookies) {
+  cookies.delete(COOKIE, SCOPE);
+}
+
+export function flashMessage(key: string | undefined) {
+  return key && Object.hasOwn(FLASH_MESSAGES, key)
+    ? FLASH_MESSAGES[key as FlashKey]
+    : undefined;
+}
+```
+
+The Action handler sets the key once the outcome is decided, and returns what the caller needs to navigate:
+
+```typescript
+// src/actions/index.ts — createItem, with `import { setFlash } from "../flash"`
+handler: async (input, context) => {
+  const user = context.locals.user;
+  if (!user) throw new ActionError({ code: "UNAUTHORIZED" });
+  const item = await saveItem(input, user);
+  setFlash(context.cookies, "item-saved");
+  return { id: item.id };
+},
+```
+
+The caller navigates on success. A form Action (layer 2) renders the page in the POST response, so the page redirects; an island (layer 3) assigns:
+
+```astro
+---
+// pages/items/new.astro
+import { actions } from "astro:actions";
+const result = Astro.getActionResult(actions.createItem);
+if (result && !result.error) return Astro.redirect(`/items/${result.data.id}`);
+---
+<form method="POST" action={actions.createItem}>
+  <input name="name" required />
+  {result?.error && <p role="alert">Could not save. Check the name and try again.</p>}
+  <button>Save</button>
+</form>
+```
+
+```typescript
+// island wrapper
+const { data, error } = await actions.createItem(formData);
+if (error) return showError(error);
+window.location.assign(`/items/${data.id}`);
+```
+
+```typescript
+// middleware.ts — after the auth redirect, replacing the final `return next()`
+// (imports readFlash and clearFlash from "./flash")
+const headers = context.request.headers;
+const dest = headers.get("sec-fetch-dest");
+const isPageRequest =
+  context.request.method === "GET" &&
+  (dest === null || dest === "document") &&
+  !headers.has("sec-purpose");
+const flash = isPageRequest ? readFlash(context.cookies) : undefined;
+context.locals.flash = flash;
+
+const response = await next();
+const redirected = response.status >= 300 && response.status < 400;
+if (flash && !redirected) clearFlash(context.cookies);
+return response;
+```
+
+```astro
+---
+// shared/layout/Layout.astro
+import { flashMessage } from "../../flash";
+const message = flashMessage(Astro.locals.flash);
+---
+{message && <p role="status" class="flash">{message}</p>}
+```
+
+A message the user must acknowledge — a failure reported after a redirect, a warning — takes the dismissible variant. The popover renders in the top layer, above every stacking context, and its close button is declarative:
+
+```astro
+{message && (
+  <div id="flash" popover="manual" role="status">
+    <p>{message}</p>
+    <button type="button" popovertarget="flash" popovertargetaction="hide">Close</button>
+  </div>
+)}
+
+<script>
+  document.getElementById("flash")?.showPopover();
+</script>
+```
+
+* A popover stays hidden until shown, and no attribute opens one on load, so the variant costs one line of layout script — the same exception as other openings no user action triggers. If the script does not run, only the message is lost
+* `popover="manual"`, not `auto`: an auto popover closes when the user opens a menu or any other auto popover, and on any outside click
+
+* An Action that calls `setFlash` is a navigate-on-success Action, the same way an endpoint that redirects is. Its callers follow the navigation it implies — a redirect (layer 2) or `assign()` / `reload()` (layer 3). A caller that stays on the page shows the outcome in place and calls an Action that sets no flash; calling a navigate-on-success Action without navigating breaks its contract, and the message surfaces on a later, unrelated page
+* The cookie carries a key, never the message text. `FlashKey` makes a setter naming a missing key a type error. The reader checks with `Object.hasOwn`, so a tampered cookie can only pick a message the app already has (a plain lookup would also match inherited keys such as `constructor`), and the rendered text is never user-controlled
+* The `__Host-` prefix keeps a sibling subdomain from planting the cookie. The browser also rejects a deletion that lacks `Secure` or `Path=/`, so set and clear share one scope inside `flash.ts` — a mismatched clear leaves the message showing on every page until it expires. WebKit does not accept a `__Host-` cookie on `http://localhost`, so a dev server on plain HTTP loses the message in Safari; serve dev over HTTPS when testing it there
+* Delete in middleware, after `next()`, and only when the response is not a redirect. A redirect — the auth redirect, or `Astro.redirect` in a page — passes the cookie on to the page that finally renders. Cookies set after `next()` still reach the response headers. Declare `flash` on `App.Locals`
+* Read on page requests only. An island's Action call, a Server Island fetch, or a speculative prefetch (`Sec-Purpose`) would otherwise take the message before the page that should show it. A missing `Sec-Fetch-Dest` header counts as a page request; in browsers below the floor that omit it, a prefetch can take the message
+* The default message is server HTML. Placement and fade-out are CSS. No island, no client state, no script — a `role="status"` paragraph is visible as parsed, which a popover is not
+* `Astro.session` carries result data across a PRG redirect; the flash cookie carries only the outcome message, and needs no session driver
+* If the cookie is lost, only the message is missing — the outcome was decided before the navigation. The cookie belongs to the browser, not the tab, so the message can also appear in another tab's next page, and a back navigation can show it again from cache
+* An outcome shown without a navigation (a form Action's validation error, an island's Action returning an error) is displayed in place, not through the cookie. A failure that still ends in a navigation (a layer-1 POST that redirects either way) sets its own key the same way
 
 View/Wrapper separation — when an island calls Actions, separate View from integration:
 
@@ -351,8 +483,8 @@ Required for all applications:
 
 * HTTPS in production
 * All cookies: `HttpOnly` + `SameSite=Lax` + `Secure`
-* External API calls only in `.astro` frontmatter or API routes
-* Validate all API route inputs with Zod
+* External API calls only on the server — `.astro` frontmatter, Action handlers, or API routes, through `features/*/data/`
+* Validate all Action and API route inputs with Zod
 
 When authentication is required:
 
@@ -403,12 +535,13 @@ Do not add `<ClientRouter />` — it converts the MPA into an SPA at runtime, re
 ```
 src/
   middleware.ts
+  flash.ts                  — post-navigation message keys and the one-shot cookie (setFlash / readFlash / clearFlash / flashMessage)
   pages/
     api/                    — endpoints for external consumers only (webhook receivers, SSE/streaming)
   features/
     {feature}/
       types.ts
-      data/                 — data I/O, server-only (backend boundary: swap internals without changing callers). API fetch, file processing, DB queries, storage writes. Only frontmatter and Action handlers call into data/. Islands must not import from this directory
+      data/                 — data I/O, server-only (backend boundary: swap internals without changing callers). API fetch, file processing, DB queries, storage writes. Only frontmatter, Action handlers, and API routes call into data/. Islands must not import from this directory
       components/           — .astro (display) + island wrappers (Action integration)
         react/              — pure React views (no Astro imports, no framework integration)
   shared/
