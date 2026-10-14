@@ -352,14 +352,20 @@ const FLASH_MESSAGES = {
 
 export type FlashKey = keyof typeof FLASH_MESSAGES;
 
+// __Host-: the browser accepts the cookie only with Secure, Path=/ and no Domain
+const COOKIE = "__Host-flash";
+const SCOPE = { path: "/", secure: true } as const;
+
 export function setFlash(cookies: AstroCookies, key: FlashKey) {
-  cookies.set("flash", key, {
-    path: "/",
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    maxAge: 60,
-  });
+  cookies.set(COOKIE, key, { ...SCOPE, httpOnly: true, sameSite: "lax", maxAge: 60 });
+}
+
+export function readFlash(cookies: AstroCookies) {
+  return cookies.get(COOKIE)?.value;
+}
+
+export function clearFlash(cookies: AstroCookies) {
+  cookies.delete(COOKIE, SCOPE);
 }
 
 export function flashMessage(key: string | undefined) {
@@ -407,18 +413,19 @@ window.location.assign(`/items/${data.id}`);
 
 ```typescript
 // middleware.ts — after the auth redirect, replacing the final `return next()`
+// (imports readFlash and clearFlash from "./flash")
 const headers = context.request.headers;
 const dest = headers.get("sec-fetch-dest");
 const isPageRequest =
   context.request.method === "GET" &&
   (dest === null || dest === "document") &&
   !headers.has("sec-purpose");
-const flash = isPageRequest ? context.cookies.get("flash")?.value : undefined;
+const flash = isPageRequest ? readFlash(context.cookies) : undefined;
 context.locals.flash = flash;
 
 const response = await next();
 const redirected = response.status >= 300 && response.status < 400;
-if (flash && !redirected) context.cookies.delete("flash", { path: "/" });
+if (flash && !redirected) clearFlash(context.cookies);
 return response;
 ```
 
@@ -431,11 +438,30 @@ const message = flashMessage(Astro.locals.flash);
 {message && <p role="status" class="flash">{message}</p>}
 ```
 
+A message the user must acknowledge — a failure reported after a redirect, a warning — takes the dismissible variant. The popover renders in the top layer, above every stacking context, and its close button is declarative:
+
+```astro
+{message && (
+  <div id="flash" popover="manual" role="status">
+    <p>{message}</p>
+    <button type="button" popovertarget="flash" popovertargetaction="hide">Close</button>
+  </div>
+)}
+
+<script>
+  document.getElementById("flash")?.showPopover();
+</script>
+```
+
+* A popover stays hidden until shown, and no attribute opens one on load, so the variant costs one line of layout script — the same exception as other openings no user action triggers. If the script does not run, only the message is lost
+* `popover="manual"`, not `auto`: an auto popover closes when the user opens a menu or any other auto popover, and on any outside click
+
 * An Action that calls `setFlash` is a navigate-on-success Action, the same way an endpoint that redirects is. Its callers follow the navigation it implies — a redirect (layer 2) or `assign()` / `reload()` (layer 3). A caller that stays on the page shows the outcome in place and calls an Action that sets no flash; calling a navigate-on-success Action without navigating breaks its contract, and the message surfaces on a later, unrelated page
 * The cookie carries a key, never the message text. `FlashKey` makes a setter naming a missing key a type error. The reader checks with `Object.hasOwn`, so a tampered cookie can only pick a message the app already has (a plain lookup would also match inherited keys such as `constructor`), and the rendered text is never user-controlled
+* The `__Host-` prefix keeps a sibling subdomain from planting the cookie. The browser also rejects a deletion that lacks `Secure` or `Path=/`, so set and clear share one scope inside `flash.ts` — a mismatched clear leaves the message showing on every page until it expires. WebKit does not accept a `__Host-` cookie on `http://localhost`, so a dev server on plain HTTP loses the message in Safari; serve dev over HTTPS when testing it there
 * Delete in middleware, after `next()`, and only when the response is not a redirect. A redirect — the auth redirect, or `Astro.redirect` in a page — passes the cookie on to the page that finally renders. Cookies set after `next()` still reach the response headers. Declare `flash` on `App.Locals`
 * Read on page requests only. An island's Action call, a Server Island fetch, or a speculative prefetch (`Sec-Purpose`) would otherwise take the message before the page that should show it. A missing `Sec-Fetch-Dest` header counts as a page request; in browsers below the floor that omit it, a prefetch can take the message
-* The message is server HTML. Placement and fade-out are CSS. No island, no client state. It is a `role="status"` paragraph, not a `popover`: a popover is hidden until a trigger or script shows it
+* The default message is server HTML. Placement and fade-out are CSS. No island, no client state, no script — a `role="status"` paragraph is visible as parsed, which a popover is not
 * `Astro.session` carries result data across a PRG redirect; the flash cookie carries only the outcome message, and needs no session driver
 * If the cookie is lost, only the message is missing — the outcome was decided before the navigation. The cookie belongs to the browser, not the tab, so the message can also appear in another tab's next page, and a back navigation can show it again from cache
 * An outcome shown without a navigation (a form Action's validation error, an island's Action returning an error) is displayed in place, not through the cookie. A failure that still ends in a navigation (a layer-1 POST that redirects either way) sets its own key the same way
@@ -509,7 +535,7 @@ Do not add `<ClientRouter />` — it converts the MPA into an SPA at runtime, re
 ```
 src/
   middleware.ts
-  flash.ts                  — post-navigation message keys and the one-shot cookie (setFlash / flashMessage)
+  flash.ts                  — post-navigation message keys and the one-shot cookie (setFlash / readFlash / clearFlash / flashMessage)
   pages/
     api/                    — endpoints for external consumers only (webhook receivers, SSE/streaming)
   features/
