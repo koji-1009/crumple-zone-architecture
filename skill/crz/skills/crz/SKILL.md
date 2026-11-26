@@ -7,7 +7,26 @@ description: Implement Astro applications with Crumple Zone Architecture — tru
 
 Build healthy Astro applications with Crumple Zone Architecture. Trust the browser, design for failure modes, minimize framework dependency.
 
-Prerequisite: Astro 7+ with `output: 'server'`. This architecture requires server-side rendering for middleware, API routes, and data fetching in frontmatter.
+Prerequisite: Astro 7+. An adapter is required once anything renders on demand (a page, an Action, a Server Island).
+
+## Rendering Mode
+
+Decide per page, by one test: does the output depend on the request?
+
+* Yes — it reads cookies, the session, headers, the query string, or a POST body, is gated by auth, or shows data that must be current on every request → on-demand. Frontmatter and middleware run per request
+* No → prerendered. Frontmatter and middleware run once, at build. There is no request: cookies, session, headers, and the query string are empty, and `Astro.redirect` degrades to a client redirect
+
+Never prerender a request-dependent page, and never rebuild the request-dependence on the client (an island or script that reads the query string or fetches per-user data). A `server:defer` component is tested on its own: it always renders on demand, so a prerendered page may hold one.
+
+A shared cache (CDN) may hold a response only when its output depends on nothing in the request but the URL: a prerendered page, or an on-demand page that reads no cookie, session, or header. Per-user parts of the page move into a Server Island (see Server Islands). Every on-demand response is `Cache-Control: private, no-store` by default (see the middleware); a page that passes this test opts into sharing with `Astro.response.headers.set("Cache-Control", ...)`.
+
+This is the origin's half of the contract. It holds only when the CDN honors the origin's `Cache-Control` (no TTL rule that caches past `private` or `no-store`), keys on the full URL including the query string, and forwards to on-demand routes the cookies they read. Configuring the CDN to meet that is infrastructure, outside this skill.
+
+The same test governs `Astro.cache.set()`. A cache hit is served before middleware runs, so never call it on an auth-gated route or a per-user island.
+
+In this document "server" means wherever frontmatter runs — the build for a prerendered page, the request for an on-demand one. Everything that names cookies, sessions, POST, PRG, form Actions, auth, or query params applies to on-demand pages only.
+
+`output` only sets the default. A project with any request-dependent page sets `output: 'server'` and marks every page that does not depend on the request with `export const prerender = true`. The default then sits on the correct side: no request-dependent page can be built ahead of time by omission. A project with none leaves the default (`'static'`), and still needs the adapter if it has a Server Island or an Action.
 
 ## Priorities
 
@@ -40,9 +59,11 @@ HTML output notes (Astro 7): unclosed tags are build errors. Invalid nesting (e.
 
 Islands in layers 3-4 should be wrapped in each framework's error boundary mechanism. If the island crashes, display a fallback UI instead of a blank space. This structurally enforces the isolation guarantee — the rest of the page remains intact.
 
-Server-side errors: provide `pages/500.astro` for unhandled exceptions. In `---` frontmatter, catch expected errors (DB failures, external API errors) and render an error state in HTML. Action handlers throw `ActionError` with appropriate codes — the calling island or form receives the error and displays feedback.
+Server-side errors (on-demand pages): provide `pages/500.astro` for unhandled exceptions. In `---` frontmatter, catch expected errors (DB failures, external API errors) and render an error state in HTML. Action handlers throw `ActionError` with appropriate codes — the calling island or form receives the error and displays feedback.
 
-Partial failure: when frontmatter fetches from multiple sources, catch each independently. Display successful results and show a warning banner for failed sources. Do not fail the entire page because one source is unavailable — this applies "Recoverability > Continuity" at the data level.
+Partial failure (on-demand pages): when frontmatter fetches from multiple sources, catch each independently. Display successful results and show a warning banner for failed sources. Do not fail the entire page because one source is unavailable — this applies "Recoverability > Continuity" at the data level.
+
+Build-time failure (prerendered pages): never bake a source's failure into the output — no warning banner or error state in prerendered HTML. It would be served to every visitor until the next build, including after the source recovers, and no reload clears it. What the build does when a source fails is a deployment decision, not this skill's. A source whose failure the user must see when viewing is read on demand (the page, or a `server:defer` component).
 
 ## Component Decisions
 
@@ -71,7 +92,7 @@ Extraction is the default, not the exception. When building a page, actively loo
 * It fetches its own data (enables partial failure pattern)
 * It has independent failure modes (limits blast radius)
 
-Within a single page, extraction needs no reuse justification — decomposing `.astro` is free at runtime (compiles to HTML; props and slots are the only interface). Reuse across 2+ pages is the design-component context: promote to `shared/components/` (project-wide) or the feature's `components/` (feature-wide). Extraction bounds what an edit can touch — not runtime errors: an uncaught frontmatter error in any component still fails the whole SSR render (runtime containment comes from the partial failure pattern).
+Within a single page, extraction needs no reuse justification — decomposing `.astro` is free at runtime (compiles to HTML; props and slots are the only interface). Reuse across 2+ pages is the design-component context: promote to `shared/components/` (project-wide) or the feature's `components/` (feature-wide). Extraction bounds what an edit can touch — not runtime errors: an uncaught frontmatter error in any component still fails the whole render — the response on demand, the build when prerendered (runtime containment comes from the partial failure pattern).
 
 Inline HTML remains only for the skeleton and nameless structural glue (grid frames, dividers). Smell: an `.astro` file over ~100 lines — look for a boundary.
 
@@ -102,20 +123,26 @@ Client directives:
 
 Server Islands (`server:defer`):
 
-Defer server rendering of auxiliary components. The page loads with fallback content; the component renders asynchronously via a separate server request.
+Defer server rendering of auxiliary components. The page loads with fallback content; the component renders asynchronously via a separate server request. The component itself always renders on demand, also inside a prerendered page.
 
 When to use frontmatter (default):
 
-* Page's main content — block SSR to guarantee delivery
+* Page's main content — block the render to guarantee delivery
 * Auxiliary content needed immediately — use partial failure pattern on error
 * Content whose absence would mislead the user
 
 When to use `server:defer`:
 
 * Expensive computation where the user expects loading time (analytics charts, aggregated reports)
-* Personalized content on an otherwise cacheable page (user profile widget on a public page)
+* Personalized content on an otherwise cacheable or prerendered page (user profile widget on a public page)
 
 Fallback design: if the Server Island fails, the fallback remains silently — no error UI, no retry. Design the fallback as content meaningful on its own, not just a loading indicator.
+
+A Server Island is its own entry point, requested separately from the page, and anyone holding its URL can request it. Middleware lets it through without the auth redirect (see Security Boundary). An island that renders non-public data checks `Astro.locals.user`, and authorization for its props, itself, and renders the signed-out state otherwise — a sign-in link in an app bar, or nothing. Encrypted props are tamper-proof, not access control.
+
+Per-user parts of a layout — an app bar showing the signed-in user — are one `.astro` component that reads `Astro.locals.user`, and the caller decides how it renders. The layout for auth-gated pages renders it directly: those pages are on-demand and private. The layout for prerendered or CDN-cacheable pages renders it with `server:defer`, so the page HTML depends on no user and only the island request is per-user. A form in such a component posts to an explicit on-demand URL (`<form method="POST" action="/logout">`, handled by `pages/logout.astro` with PRG), never to the current page, which may be a static file.
+
+Island responses fall under the same private default as every on-demand response (see the middleware): the island URL carries encrypted props, not the cookie, so a shared cache would serve one user's island to another. An island whose output depends on nothing but its props opts into sharing by setting its own `Cache-Control`.
 
 Decision test:
 
@@ -226,7 +253,7 @@ For the reasoning behind granularity and behavior locality, see architecture.md 
 
 Execution boundary: the `---` block runs on the server. The HTML below it is the output. No JavaScript reaches the browser unless explicitly added via `<script>` or an island. Do not define client-side functions in frontmatter.
 
-* Fetch dynamic data (DB, API — changes per request) in `.astro` frontmatter. Never fetch in islands
+* Fetch data (DB, API, CMS) in `.astro` frontmatter — per request or at build, per Rendering Mode. Never fetch in islands
 * Static configuration may be imported directly in islands — no need to serialize through props. A module is static configuration if it requires no server-side execution (no I/O, no async, no secrets). Examples: `as const` objects, Zod schemas, enum definitions, display constants
 * Pass only rendering data as props. Never pass auth tokens, API keys, or session data
 * Use `Astro.locals` (set by middleware) for auth/role data
@@ -275,6 +302,8 @@ Never use:
 Server handles correctness, client provides feedback as a crumple zone.
 
 Client-initiated mutations that accept user input requiring validation must use Astro Actions (`astro:actions`). Actions provide type-safe server functions with built-in Zod validation — the caller gets compile-time type errors if the contract is violated. Mutations without user input (logout, session clear) use `<form method="POST">` with PRG — no Action needed. Navigation without data change uses `<a>` — not an Action.
+
+The page a mutation posts to is on-demand — a form without `action`, or with a form Action, posts to the current page. Do not move a mutation into a client island's Action call to keep its page prerendered.
 
 ```typescript
 // src/actions/index.ts
@@ -412,7 +441,7 @@ window.location.assign(`/items/${data.id}`);
 ```
 
 ```typescript
-// middleware.ts — after the auth redirect, replacing the final `return next()`
+// middleware.ts — in `auth`, after the auth redirect, replacing the final `return next()`
 // (imports readFlash and clearFlash from "./flash")
 const headers = context.request.headers;
 const dest = headers.get("sec-fetch-dest");
@@ -425,7 +454,11 @@ context.locals.flash = flash;
 
 const response = await next();
 const redirected = response.status >= 300 && response.status < 400;
-if (flash && !redirected) clearFlash(context.cookies);
+if (flash && !redirected) {
+  clearFlash(context.cookies);
+  // This response carries one user's message: keep it out of shared caches.
+  response.headers.set("Cache-Control", "private, no-store");
+}
 return response;
 ```
 
@@ -457,6 +490,7 @@ A message the user must acknowledge — a failure reported after a redirect, a w
 * `popover="manual"`, not `auto`: an auto popover closes when the user opens a menu or any other auto popover, and on any outside click
 
 * An Action that calls `setFlash` is a navigate-on-success Action, the same way an endpoint that redirects is. Its callers follow the navigation it implies — a redirect (layer 2) or `assign()` / `reload()` (layer 3). A caller that stays on the page shows the outcome in place and calls an Action that sets no flash; calling a navigate-on-success Action without navigating breaks its contract, and the message surfaces on a later, unrelated page
+* The page a navigate-on-success Action lands on is on-demand and never served from a shared cache. A prerendered or CDN-cached response never reaches the middleware, so the cookie waits and surfaces on the next page that does. The response that renders the message is forced to `private, no-store`, even on a page that opted into sharing, so a CDN never stores one user's message
 * The cookie carries a key, never the message text. `FlashKey` makes a setter naming a missing key a type error. The reader checks with `Object.hasOwn`, so a tampered cookie can only pick a message the app already has (a plain lookup would also match inherited keys such as `constructor`), and the rendered text is never user-controlled
 * The `__Host-` prefix keeps a sibling subdomain from planting the cookie. The browser also rejects a deletion that lacks `Secure` or `Path=/`, so set and clear share one scope inside `flash.ts` — a mismatched clear leaves the message showing on every page until it expires. WebKit does not accept a `__Host-` cookie on `http://localhost`, so a dev server on plain HTTP loses the message in Safari; serve dev over HTTPS when testing it there
 * Delete in middleware, after `next()`, and only when the response is not a redirect. A redirect — the auth redirect, or `Astro.redirect` in a page — passes the cookie on to the page that finally renders. Cookies set after `next()` still reach the response headers. Declare `flash` on `App.Locals`
@@ -477,7 +511,7 @@ The wrapper is the crumple zone between UI and server actions. View changes and 
 
 ## Security Boundary
 
-The Astro server is a BFF — trust boundary between browser and backend.
+Server-side code — frontmatter, Action handlers, endpoints, middleware — is the trust boundary between browser and backend. Where pages render on demand, the Astro server is a BFF.
 
 Required for all applications:
 
@@ -488,7 +522,8 @@ Required for all applications:
 
 When authentication is required:
 
-* Middleware checks auth on every request
+* Middleware checks auth on every page request. API routes and Server Islands are entry points that check `Astro.locals.user` themselves
+* Every auth-gated page is on-demand — a prerendered page is built without a request and never passes this check
 
 Forbidden:
 
@@ -502,24 +537,50 @@ Browser-native APIs (Geolocation, Chrome AI, Web Speech) belong to the HTML/Brow
 Middleware:
 
 ```typescript
-import { defineMiddleware } from "astro:middleware";
+import { defineMiddleware, sequence } from "astro:middleware";
 
-export const onRequest = defineMiddleware(async (context, next) => {
+// On-demand responses are private unless the page or island opted into sharing.
+const cachePolicy = defineMiddleware(async (context, next) => {
+  const response = await next();
+  if (!context.isPrerendered && !response.headers.has("Cache-Control")) {
+    response.headers.set("Cache-Control", "private, no-store");
+  }
+  return response;
+});
+
+const auth = defineMiddleware(async (context, next) => {
+  // Prerendered pages are built without a request: no cookies, no headers, no auth.
+  // An auth-gated page marked prerendered fails the build instead of shipping its content.
+  if (context.isPrerendered) {
+    if (!isPublicPath(context.url.pathname)) {
+      throw new Error(`Auth-gated page is prerendered: ${context.url.pathname}`);
+    }
+    return next();
+  }
+
   const session = context.cookies.get("session")?.value;
   context.locals.user = session ? await resolveUser(session) : null;
 
-  // API routes check context.locals.user and return HTTP status directly.
-  // No redirect — they validate their own input (Zod).
+  // API routes and Server Islands are entry points that check context.locals.user
+  // themselves. No redirect: an API route returns an HTTP status; the browser follows a
+  // redirect from an island request and swaps the login page into the island.
+  // ("/_server-islands/[name]" is Astro's internal route for island requests.)
   if (context.url.pathname.startsWith("/api/")) return next();
+  if (context.routePattern === "/_server-islands/[name]") return next();
 
-  if (!session && !isPublicPath(context.url.pathname)) {
+  if (!context.locals.user && !isPublicPath(context.url.pathname)) {
     return context.redirect("/login");
   }
 
   return next();
 });
+
+export const onRequest = sequence(cachePolicy, auth);
 ```
 
+Keep each early return only when the project has that kind of route: the `isPrerendered` guard with prerendered pages, the `/api/` branch with API routes, the island branch with Server Islands.
+
+`isPublicPath` is an allowlist: it covers every prerendered path — including `404` and feeds — public on-demand pages such as `/login`, and the framework routes a signed-out visitor uses (`/_image`, `/_actions/{name}` for an Action called without a session). Any other page is gated, so a forgotten one fails closed.
 Advanced routing (`src/fetch.ts`):
 
 * `src/fetch.ts` is a reserved filename. Creating it replaces Astro's default request pipeline entirely — the exported `fetch()` must call the `astro()` handler (or compose `astro/fetch` handlers), otherwise middleware, Actions, and page rendering never run and every route breaks
@@ -532,10 +593,14 @@ Do not add `<ClientRouter />` — it converts the MPA into an SPA at runtime, re
 
 ## Project Structure
 
+`middleware.ts`, `flash.ts`, `actions/`, and `pages/api/` exist only when the project has on-demand rendering.
+
 ```
 src/
   middleware.ts
   flash.ts                  — post-navigation message keys and the one-shot cookie (setFlash / readFlash / clearFlash / flashMessage)
+  actions/
+    index.ts                — Action definitions (handlers call into features/*/data/)
   pages/
     api/                    — endpoints for external consumers only (webhook receivers, SSE/streaming)
   features/
@@ -556,8 +621,8 @@ src/
 
 Test effort follows the reliability layers:
 
-1. Layer 1-2 (HTML/CSS, SSR output)
-   * E2E tests (Playwright). Verify that server-rendered pages return correct content and structure
+1. Layer 1-2 (HTML/CSS, rendered output)
+   * E2E tests (Playwright). Verify that pages return correct content and structure
 2. Server (Actions / data access)
    * Unit tests. Guarantee server-side correctness — validation, authorization, data mutations
 3. Islands (layers 3-4)
@@ -593,7 +658,7 @@ After applying CRZ principles, review every change against these checks before f
 3. Dead code check
    * Are all exported functions called? Unused initializers, sync functions, or cache hydration calls indicate an over-designed layer.
 4. Simplicity check
-   * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (SSR props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
+   * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (frontmatter props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
 5. Component decomposition check
    * Pages hold frontmatter, layout, semantic skeleton, and composition — data display lives in components; a page-level `<script>` only for section-spanning behavior. Every nameable section is extracted; inline HTML remains for the skeleton and nameless glue. The same markup on 2+ pages → promote to `shared/components/` (design-component context). Repeated script wiring marks a missed component boundary. An `.astro` file over ~100 lines needs a boundary search. No pass-through components that only forward props.
 6. Island necessity check
