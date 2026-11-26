@@ -93,7 +93,7 @@ Consequences:
 
 ## 3. Security Boundary
 
-Treat application code running on the client as an untrusted zone. The server functions as a BFF that returns HTML.
+Treat application code running on the client as an untrusted zone. The server produces the HTML — per request, or ahead of time for pages that do not depend on the request — and functions as a BFF.
 
 Baseline for all applications:
 
@@ -126,7 +126,7 @@ The controls above limit what an XSS can reach. Two further controls limit wheth
 
 What is architectural is the precondition. Both are enforced page-wide, and third-party script is what erodes them. A tag manager can be admitted to a strict CSP through a nonce and `strict-dynamic`, but everything it loads thereafter inherits that trust, so the policy stops describing what may execute. Trusted Types is harder: enforcement reaches every script on the page, so a third-party script writing to a DOM sink throws unless it creates a policy of its own. Keeping external calls on the server and placing client components only where interaction requires them is what leaves both options open. Every third-party script added to the page narrows them, and that decision is frequently not an engineering one.
 
-When authentication is required, middleware checks auth on every request and redirects unauthenticated users. Public applications without auth still benefit from the baseline above.
+When authentication is required, middleware checks auth on every page request and redirects unauthenticated users; deferred components and API routes, which are requested separately, check it themselves. A page behind auth is therefore always rendered per request. Public applications without auth still benefit from the baseline above.
 
 ## 4. Experience Layer
 
@@ -191,7 +191,7 @@ Synchronous (default):
 
 * Page's main content — guarantee delivery before the page reaches the user
 * Content whose absence would mislead the user
-* Use partial failure pattern when fetching from multiple sources
+* Use partial failure pattern when fetching from multiple sources, on pages rendered per request
 
 Deferred:
 
@@ -199,6 +199,12 @@ Deferred:
 * Personalized content on an otherwise cacheable page
 
 Deferred rendering is a crumple zone: if it fails, the fallback remains and the page continues to function. Design fallback content to be meaningful on its own, not merely a loading indicator.
+
+Per-user parts of a layout — an app bar showing the signed-in user — are one component, and the caller decides how it is delivered. A page behind auth is rendered per request and is private, so it renders the component synchronously. A page meant for a shared cache defers it, so the page itself depends on no user; only the deferred response is per-user, and it is never shared.
+
+Rendering time is decided per page by one question: does the output depend on the request? A page that reads cookies, the session, headers, a POST body, or query parameters, is gated by auth, or shows data that must be current is rendered per request. A page that does not may be rendered once, ahead of time, and served as a file; it reads its canonical sources at build. The reverse is ruled out: a request-dependent page is never built ahead of time and patched on the client.
+
+Failure handling follows from this. Per request, a failed source is transient: the page shows what succeeded and a warning, and a reload reads the source again. Ahead of time, the build is the only read: a warning written into the output is served to every visitor until the next build, remains after the source has recovered, and no reload removes it. A source's failure is therefore never written into prerendered output; a source whose failure must be visible when the page is viewed is read per request. What the build does when a source fails is a deployment decision.
 
 ### 5.4 Evaluating Browser API Maturity
 
@@ -238,7 +244,7 @@ The third pattern is the most insidious: the API passes feature detection, appea
 
 ### 5.5 Component Granularity and Behavior Locality
 
-The cost of component decomposition depends on who edits the code. For a human reader, fine-grained components add navigation and indirection cost — the classic argument against premature extraction. For an AI agent, a component is a write-unit: a small component is a small edit target that needs little context, and what an edit can unintentionally change is bounded by the component's contract. Blast radius applies to the development process, not only to runtime. The two are distinct: extraction bounds edits, while runtime containment still comes from the partial-failure pattern — an uncaught error in any component's frontmatter fails the whole SSR render regardless of file boundaries.
+The cost of component decomposition depends on who edits the code. For a human reader, fine-grained components add navigation and indirection cost — the classic argument against premature extraction. For an AI agent, a component is a write-unit: a small component is a small edit target that needs little context, and what an edit can unintentionally change is bounded by the component's contract. Blast radius applies to the development process, not only to runtime. The two are distinct: extraction bounds edits, while runtime containment still comes from the partial-failure pattern — an uncaught error in any component's frontmatter fails the whole render regardless of file boundaries.
 
 `.astro` components make decomposition free at runtime: they compile to HTML, carry no lifecycle, and expose props and slots as their only interface. With near-zero decomposition cost and a positive payoff for the editing process, extraction is the default, not the exception: within a page, any section that can be named is a component, and no reuse justification is required. Reuse across pages is a separate concern — the design-component context (`shared/components/`) — while per-page extraction is about discovering the boundaries a page already contains. Repeated script wiring is the strongest such signal: the same behavior appearing twice marks a component boundary. Two guards keep this from tipping into fragmentation: split wide rather than deep (one level of composition per page by default; a deeper level needs its own nameable concern, never a pass-through component that only forwards props), and never extract what cannot be named.
 
@@ -249,5 +255,5 @@ Behavior belongs with the markup it drives. When a page-level `<script>` accumul
 1. Trust the browser — calibrated to maturity (5.4). Contain immature APIs behind crumple zones; fix defects upstream to thin the zone. The scope of MPA continues to expand as browsers gain native capabilities
 2. Design for failure modes. Begin with fault containment, not feature addition
 3. The server is the authority on state. The client is a display layer; a reload is the reconstruction mechanism from canonical sources
-4. Make security boundaries visible. Every server entry point the client reaches — a page, a form POST, an Action, an API route — is declared in code and validates its own input. An RPC is acceptable when it is declared this way; what is ruled out is a call path hidden by the framework
+4. Make security boundaries visible. Every server entry point the client reaches — a page, a form POST, an Action, an API route, a deferred component's request — is declared in code and validates its own input. An RPC is acceptable when it is declared this way; what is ruled out is a call path hidden by the framework
 5. Leave navigation to the browser. `<ClientRouter />` is not used: it converts the MPA into an SPA at runtime, reintroducing the client-side routing layer this architecture minimizes

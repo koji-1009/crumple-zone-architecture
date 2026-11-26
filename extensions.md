@@ -6,7 +6,7 @@ Clarifies the scope of the design principles and provides patterns for extending
 
 ### Achievable with MPA + Islands
 
-Applications where the server returns HTML per request and island components are placed only where interactivity is needed.
+Applications where the server returns HTML — per request, or built ahead of time for pages that do not depend on the request — and island components are placed only where interactivity is needed.
 
 * Content sites, blogs, documentation
 * Admin panels, dashboards
@@ -190,14 +190,15 @@ Server (canonical source)
 
 * The cache holds the last known correct state — not a diverged client state
 * Stale or missing cache falls through to the server
-* Reload reconstructs from the canonical source, overwriting any cached value
+* Reload reconstructs from the canonical source, overwriting any client-side cached value. A shared cache entry or a prerendered page is replaced by its expiry or the next build, not by a reload
 * Cache strategy (stale-while-revalidate, network-first, etc.) is a performance decision, not an architectural one
+* A shared cache (CDN) holds only responses that depend on nothing in the request but the URL. Per-user parts are split into deferred components, whose responses are private
 
 Cache layers are crumple zones by nature: if they break or become stale, the server corrects on the next reachable request. No state authority moves to the client.
 
-Astro 7's route caching API is a framework-native implementation of this layer: routes declare cache directives in code (`Astro.cache.set()` / `context.cache.set()`), keeping the boundary visible. Caching activates only when a cache provider is configured — the built-in provider is in-memory, and the CDN providers (Netlify, Vercel, Cloudflare) are experimental opt-ins. The decision remains a performance one — no state authority moves.
+Astro 7's route caching API is a framework-native implementation of this layer: routes declare cache directives in code (`Astro.cache.set()` / `context.cache.set()`), keeping the boundary visible. Caching activates only when a cache provider is configured — the built-in provider is in-memory, and the CDN providers (Netlify, Vercel, Cloudflare) are experimental opt-ins. The decision remains a performance one — no state authority moves. A cache hit is served before middleware runs, so the route cache holds only responses that depend on nothing but the URL — never an auth-gated route or a per-user deferred component.
 
-In SSR environments, client-side caching is often redundant for server-readable canonical sources (cookies, databases). Every navigation reconstructs state from the canonical source via SSR. A client-side cache is justified when: (a) the canonical source is client-only (localStorage), or (b) network latency must be hidden (offline-first).
+For pages rendered per request, client-side caching is often redundant for server-readable canonical sources (cookies, databases). Every navigation reconstructs state from the canonical source via SSR. A client-side cache is justified when: (a) the canonical source is client-only (localStorage), or (b) network latency must be hidden (offline-first).
 
 Example: Firestore uses IndexedDB as a local cache, with the SDK managing synchronization. As a cache layer (2.7), it provides offline reads and reduced latency. As a sync layer (2.2), bidirectional synchronization elevates the cache to a canonical source — reads become idempotent regardless of connectivity. The two patterns share the same infrastructure but differ in architectural role.
 
